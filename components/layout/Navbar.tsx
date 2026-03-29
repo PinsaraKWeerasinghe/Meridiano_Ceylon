@@ -1,71 +1,216 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-const links = [
+const primaryLinks = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
   { href: "/reviews", label: "Reviews" },
+] as const;
+
+const moreLinks = [
   { href: "/about", label: "About" },
   { href: "/care", label: "Care Promise" },
   { href: "/terms", label: "Terms" },
-];
+] as const;
+
+const allLinks = [...primaryLinks, ...moreLinks];
+
+function pathActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function moreSectionActive(pathname: string) {
+  return moreLinks.some((l) => pathActive(pathname, l.href));
+}
 
 export function Navbar() {
-  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-cream/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <Link
-          href="/"
-          className="font-serif text-xl font-semibold tracking-tight text-forest"
-          onClick={() => setOpen(false)}
-        >
-          Meridiano<span className="text-gold"> Ceylon</span>
-        </Link>
-
-        <nav className="hidden items-center gap-6 md:flex">
-          {links.map((l) => (
+    <header className="sticky top-0 z-50 w-full border-b-2 border-primary/10 bg-background shadow-sm">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="grid h-[3.75rem] grid-cols-[1fr_auto] items-center gap-3 sm:h-16 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-4">
+          <div className="flex min-w-0 items-center gap-3">
             <Link
-              key={l.href}
-              href={l.href}
-              className="text-sm font-medium text-stone-600 transition hover:text-forest"
+              href="/"
+              className="shrink-0 font-serif text-lg font-semibold tracking-tight text-primary sm:text-xl"
+              onClick={() => setMobileOpen(false)}
             >
-              {l.label}
+              Meridiano<span className="text-gold"> Ceylon</span>
             </Link>
-          ))}
-        </nav>
+            <Separator
+              orientation="vertical"
+              className="hidden h-7 md:block"
+            />
+          </div>
 
-        <button
-          type="button"
-          className="rounded-full p-2 text-forest md:hidden"
-          aria-expanded={open}
-          aria-label={open ? "Close menu" : "Open menu"}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
-      </div>
+          <div className="hidden items-center justify-center gap-1 md:flex">
+            <div className="flex flex-wrap items-center justify-center gap-1 rounded-full border border-border bg-muted/70 p-1 shadow-inner">
+              {primaryLinks.map((l) => {
+                const active = pathActive(pathname, l.href);
+                return (
+                  <Button
+                    key={l.href}
+                    asChild
+                    variant={active ? "secondary" : "ghost"}
+                    size="sm"
+                    className={cn(
+                      "rounded-full px-3 lg:px-4 text-foreground",
+                      active && "bg-background text-primary shadow-sm",
+                    )}
+                  >
+                    <Link href={l.href}>{l.label}</Link>
+                  </Button>
+                );
+              })}
 
-      {open ? (
-        <div className="border-t border-stone-200 bg-cream px-4 py-4 md:hidden">
-          <nav className="flex flex-col gap-3">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-base font-medium text-stone-700 py-1"
-                onClick={() => setOpen(false)}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={
+                      moreSectionActive(pathname) ? "secondary" : "ghost"
+                    }
+                    size="sm"
+                    className={cn(
+                      "gap-1 rounded-full px-3 text-foreground lg:px-4",
+                      moreSectionActive(pathname) &&
+                        "bg-background text-primary shadow-sm",
+                    )}
+                  >
+                    More
+                    <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-48">
+                  {moreLinks.map((l) => (
+                    <DropdownMenuItem key={l.href} asChild>
+                      <Link href={l.href}>{l.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              asChild
+              size="sm"
+              className="hidden rounded-full shadow-sm md:inline-flex"
+            >
+              <Link href="/#build-your-journey">Build journey</Link>
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              variant="secondary"
+              className="shrink-0 rounded-full px-3 text-xs font-semibold shadow-sm md:hidden sm:px-4 sm:text-sm"
+            >
+              <Link href="/#build-your-journey">Build</Link>
+            </Button>
+
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-full shadow-md md:hidden"
+                  aria-label="Open full menu"
+                >
+                  <Menu className="h-5 w-5 text-primary-foreground" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="flex w-full flex-col sm:max-w-sm"
               >
-                {l.label}
-              </Link>
-            ))}
-          </nav>
+                <SheetHeader className="text-left">
+                  <SheetTitle>Menu</SheetTitle>
+                  <p className="text-sm font-normal text-muted-foreground">
+                    Meridiano Ceylon — luxury Sri Lanka tours
+                  </p>
+                </SheetHeader>
+                <Separator className="my-2" />
+                <nav className="flex flex-1 flex-col gap-1" aria-label="Mobile">
+                  {allLinks.map((l) => {
+                    const active = pathActive(pathname, l.href);
+                    return (
+                      <Button
+                        key={l.href}
+                        asChild
+                        variant={active ? "secondary" : "ghost"}
+                        className="h-12 w-full justify-start rounded-xl text-base"
+                      >
+                        <Link
+                          href={l.href}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {l.label}
+                        </Link>
+                      </Button>
+                    );
+                  })}
+                </nav>
+                <Separator className="my-2" />
+                <Button asChild className="w-full rounded-full" size="lg">
+                  <Link
+                    href="/#build-your-journey"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Build your journey
+                  </Link>
+                </Button>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      ) : null}
+
+        {/* Mobile: always-visible quick links (desktop nav is hidden < md) */}
+        <nav
+          className="flex gap-1 overflow-x-auto border-t border-border/80 py-2.5 md:hidden"
+          aria-label="Quick links"
+        >
+          {allLinks.map((l) => {
+            const active = pathActive(pathname, l.href);
+            return (
+              <Button
+                key={l.href}
+                asChild
+                variant={active ? "secondary" : "ghost"}
+                size="sm"
+                className={cn(
+                  "shrink-0 rounded-full px-3 text-xs font-semibold sm:text-sm",
+                  active && "ring-1 ring-primary/20",
+                )}
+              >
+                <Link href={l.href}>{l.label}</Link>
+              </Button>
+            );
+          })}
+        </nav>
+      </div>
     </header>
   );
 }
