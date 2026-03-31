@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
 
 export function Footer() {
   return (
@@ -6,9 +8,15 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <p className="font-serif text-lg font-semibold text-forest">
-              Meridiano Ceylon
-            </p>
+            <Link href="/" className="inline-flex">
+              <Image
+                src={LOGO_SRC}
+                alt={LOGO_ALT}
+                width={200}
+                height={56}
+                className="h-10 w-auto max-w-[200px] object-contain object-left"
+              />
+            </Link>
             <p className="mt-2 max-w-sm text-sm text-stone-600">
               Tailor-made Sri Lankan journeys with local expertise and premium
               care.

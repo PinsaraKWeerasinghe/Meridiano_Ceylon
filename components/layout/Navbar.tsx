@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -19,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
 import { cn } from "@/lib/utils";
 
 const primaryLinks = [
@@ -44,21 +46,39 @@ function moreSectionActive(pathname: string) {
   return moreLinks.some((l) => pathActive(pathname, l.href));
 }
 
-export function Navbar() {
+type NavbarProps = {
+  maintenanceActive?: boolean;
+};
+
+export function Navbar({ maintenanceActive = false }: NavbarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b-2 border-primary/10 bg-background shadow-sm">
+    <header
+      className={cn(
+        "sticky z-50 w-full border-b-2 border-primary/10 bg-background shadow-sm",
+        maintenanceActive
+          ? "-mt-px top-[var(--maintenance-strip-h,4.75rem)]"
+          : "top-0",
+      )}
+    >
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="grid h-[3.75rem] grid-cols-[1fr_auto] items-center gap-3 sm:h-16 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <Link
               href="/"
-              className="shrink-0 font-serif text-lg font-semibold tracking-tight text-primary sm:text-xl"
+              className="flex shrink-0 items-center"
               onClick={() => setMobileOpen(false)}
             >
-              Meridiano<span className="text-gold"> Ceylon</span>
+              <Image
+                src={LOGO_SRC}
+                alt={LOGO_ALT}
+                width={220}
+                height={64}
+                className="h-8 w-auto max-h-10 max-w-[min(52vw,200px)] object-contain object-left sm:h-9 md:h-10 md:max-w-[220px]"
+                priority
+              />
             </Link>
             <Separator
               orientation="vertical"

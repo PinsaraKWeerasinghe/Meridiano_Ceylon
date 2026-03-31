@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
+import {
+  MaintenanceBanner,
+  MaintenanceBannerSpacer,
+} from "@/components/layout/MaintenanceBanner";
+import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
+import { isMaintenanceMode } from "@/lib/maintenance";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -30,6 +37,15 @@ export const metadata: Metadata = {
     initialScale: 1,
   },
   themeColor: "#1B3C35",
+  icons: {
+    icon: [{ url: LOGO_SRC, type: "image/png" }],
+    shortcut: LOGO_SRC,
+    apple: [{ url: LOGO_SRC, type: "image/png" }],
+  },
+  appleWebApp: {
+    title: LOGO_ALT,
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({
@@ -37,12 +53,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const maintenance = isMaintenanceMode();
+
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      style={
+        !maintenance
+          ? ({ "--maintenance-strip-h": "0px" } as CSSProperties)
+          : undefined
+      }
+    >
       <body
         className={`${dmSans.variable} ${cormorant.variable} flex min-h-screen flex-col font-sans antialiased`}
       >
-        <Navbar />
+        {maintenance ? (
+          <>
+            <MaintenanceBanner />
+            <MaintenanceBannerSpacer />
+          </>
+        ) : null}
+        <Navbar maintenanceActive={maintenance} />
         <main className="flex-1">{children}</main>
         <Footer />
         <WhatsAppFloat />
