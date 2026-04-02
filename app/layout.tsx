@@ -10,7 +10,7 @@ import {
   MaintenanceBanner,
   MaintenanceBannerSpacer,
 } from "@/components/layout/MaintenanceBanner";
-import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
+import { LOGO_ALT } from "@/lib/branding";
 import { isMaintenanceMode } from "@/lib/maintenance";
 
 const dmSans = DM_Sans({
@@ -38,11 +38,7 @@ export const metadata: Metadata = {
     initialScale: 1,
   },
   themeColor: "#0a1744",
-  icons: {
-    icon: [{ url: LOGO_SRC, type: "image/png" }],
-    shortcut: LOGO_SRC,
-    apple: [{ url: LOGO_SRC, type: "image/png" }],
-  },
+  /* Tab + home-screen icons: `app/icon.png` + `app/apple-icon.png` (same artwork as LOGO_SRC) */
   appleWebApp: {
     title: LOGO_ALT,
     statusBarStyle: "default",
