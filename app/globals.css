@@ -4,27 +4,28 @@
 
 @layer base {
   :root {
-    /* Matches sticky navbar height so hero imagery can extend to the viewport top */
+    /* Fixed strip height: hero `-mt` + `pt` use this; keep in sync with Navbar py + logo */
     --navbar-h: 3.75rem;
     --background: 40 33% 97%;
-    --foreground: 168 30% 14%;
+    /* Primary UI: dark navy blue; accent teal #0B7A73 */
+    --foreground: 226 48% 14%;
     --card: 40 30% 99%;
-    --card-foreground: 168 30% 14%;
+    --card-foreground: 226 48% 14%;
     --popover: 40 30% 99%;
-    --popover-foreground: 168 30% 14%;
-    --primary: 168 38% 17%;
+    --popover-foreground: 226 48% 14%;
+    --primary: 226 76% 15%;
     --primary-foreground: 40 40% 98%;
     --secondary: 40 20% 92%;
-    --secondary-foreground: 168 30% 18%;
+    --secondary-foreground: 226 42% 18%;
     --muted: 40 18% 93%;
     --muted-foreground: 25 6% 42%;
-    --accent: 38 36% 52%;
-    --accent-foreground: 168 38% 14%;
+    --accent: 176 83% 26%;
+    --accent-foreground: 40 40% 98%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 40 40% 98%;
     --border: 40 14% 88%;
     --input: 40 14% 88%;
-    --ring: 168 38% 17%;
+    --ring: 176 83% 26%;
     --radius: 0.75rem;
   }
 

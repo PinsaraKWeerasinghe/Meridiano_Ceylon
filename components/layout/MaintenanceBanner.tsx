@@ -47,21 +47,21 @@ export function MaintenanceBanner() {
     <div
       ref={ref}
       role="status"
-      className="fixed left-0 right-0 top-0 z-40 border-b border-red-900/40 bg-red-700 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-center text-[11px] leading-snug text-white sm:px-5 sm:text-xs"
+      className="fixed left-0 right-0 top-0 z-40 border-b border-red-900/40 bg-red-700 px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] text-center text-[11px] leading-snug text-black sm:px-5 sm:text-xs"
     >
       <p className="mx-auto max-w-4xl font-normal sm:font-medium">
         This digital platform is under maintenance. If you face any issue, please
         contact through{" "}
         <a
           href={`mailto:${INFO_EMAIL}`}
-          className="font-medium underline decoration-white/80 underline-offset-2 hover:decoration-white sm:font-semibold"
+          className="font-medium underline decoration-black/55 underline-offset-2 hover:decoration-black sm:font-semibold"
         >
           {INFO_EMAIL}
         </a>{" "}
         for information and{" "}
         <a
           href={`mailto:${BOOKINGS_EMAIL}`}
-          className="font-medium underline decoration-white/80 underline-offset-2 hover:decoration-white sm:font-semibold"
+          className="font-medium underline decoration-black/55 underline-offset-2 hover:decoration-black sm:font-semibold"
         >
           {BOOKINGS_EMAIL}
         </a>{" "}

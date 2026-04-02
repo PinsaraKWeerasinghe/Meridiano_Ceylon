@@ -40,19 +40,19 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
       fluid
       border
       className={cn(
-        "sticky z-50 border-border bg-background/50 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:border-border dark:bg-background/50",
+        "sticky z-50 min-h-[var(--navbar-h)] border-border bg-background/50 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:border-border dark:bg-background/50",
         maintenanceActive
           ? "-mt-px top-[var(--maintenance-strip-h,4.75rem)]"
           : "top-0",
       )}
     >
-      <NavbarBrand as={Link} href="/" className="gap-3">
+      <NavbarBrand as={Link} href="/" className="shrink-0 gap-2 sm:gap-3">
         <Image
           src={LOGO_SRC}
           alt={LOGO_ALT}
-          width={220}
-          height={64}
-          className="h-8 w-auto max-h-9 max-w-[min(48vw,200px)] sm:h-9 md:max-w-[220px]"
+          width={280}
+          height={82}
+          className="h-8 w-auto max-w-[min(52vw,220px)] sm:h-9 md:max-w-[260px]"
           priority
         />
       </NavbarBrand>

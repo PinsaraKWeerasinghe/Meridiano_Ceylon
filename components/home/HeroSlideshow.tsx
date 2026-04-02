@@ -40,7 +40,7 @@ export function HeroSlideshow({
   if (reduceMotion) {
     return (
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute inset-0 bg-forest" />
+        <div className="absolute inset-0 bg-neutral-900" />
         <div className="absolute inset-0">
           <Image
             src={first.src}
@@ -58,7 +58,7 @@ export function HeroSlideshow({
 
   return (
     <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <div className="absolute inset-0 bg-gradient-to-b from-forest to-[#142e29]" />
+      <div className="absolute inset-0 bg-neutral-900" aria-hidden />
       {slides.map((slide, i) => (
         <div
           key={slide.src}

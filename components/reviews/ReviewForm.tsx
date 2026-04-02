@@ -100,7 +100,7 @@ export function ReviewForm() {
             accept="image/*"
             multiple
             onChange={(e) => setFiles(e.target.files)}
-            className="mt-2 block w-full text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-forest file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cream hover:file:bg-[#234a42]"
+            className="mt-2 block w-full text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-forest file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cream hover:file:bg-forest-hover"
           />
           {files && files.length > 0 ? (
             <ul className="mt-2 text-xs text-stone-500">
@@ -149,7 +149,7 @@ export function ReviewForm() {
 
         <button
           type="submit"
-          className="w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-cream transition hover:bg-[#234a42]"
+          className="w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-cream transition hover:bg-forest-hover"
         >
           Submit review
         </button>

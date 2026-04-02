@@ -19,10 +19,10 @@ const config: Config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          300: "hsl(168 38% 17% / 0.35)",
-          600: "hsl(168 36% 26%)",
+          300: "hsl(226 76% 15% / 0.35)",
+          600: "hsl(226 68% 32%)",
           700: "hsl(var(--primary))",
-          800: "hsl(168 42% 12%)",
+          800: "hsl(226 82% 10%)",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -49,8 +49,13 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         cream: "#FAF8F5",
-        forest: "#1B3C35",
-        gold: "#B08D57",
+        forest: "#0a1744",
+        forestDeep: "#04091f",
+        forestHover: "#0f224f",
+        lagoon: "#0B7A73",
+        /* Accent: dark green (replaces former gold); mint for text on dark hero */
+        gold: "#24685c",
+        goldMint: "#8ebfb4",
       },
       borderRadius: {
         lg: "var(--radius)",

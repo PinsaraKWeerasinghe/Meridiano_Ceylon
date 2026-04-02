@@ -374,7 +374,7 @@ export function BuildJourneyForm() {
 
             <button
               type="submit"
-              className="w-full rounded-full bg-forest py-4 text-sm font-semibold text-cream transition hover:bg-[#234a42]"
+              className="w-full rounded-full bg-forest py-4 text-sm font-semibold text-cream transition hover:bg-forest-hover"
             >
               Send to WhatsApp
             </button>

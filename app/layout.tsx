@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     width: "device-width",
     initialScale: 1,
   },
-  themeColor: "#1B3C35",
+  themeColor: "#0a1744",
   icons: {
     icon: [{ url: LOGO_SRC, type: "image/png" }],
     shortcut: LOGO_SRC,
