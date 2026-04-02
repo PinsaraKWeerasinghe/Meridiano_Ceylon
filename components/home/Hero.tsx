@@ -4,7 +4,7 @@ import { HeroSlideshow } from "@/components/home/HeroSlideshow";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-forest px-4 py-16 text-cream sm:px-6 sm:py-24">
+    <section className="relative -mt-[var(--navbar-h)] overflow-hidden bg-forest px-4 pb-16 pt-[calc(var(--navbar-h)+4rem)] text-cream sm:px-6 sm:pb-24 sm:pt-[calc(var(--navbar-h)+6rem)]">
       <HeroSlideshow slides={heroSlides} intervalMs={6500} />
       <div
         className="absolute inset-0 z-[2] bg-gradient-to-b from-forest/88 via-forest/78 to-[#0d2420]/92"

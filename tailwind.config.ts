@@ -6,6 +6,7 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/flowbite-react/dist/**/*.js",
   ],
   theme: {
     extend: {
@@ -18,6 +19,10 @@ const config: Config = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          300: "hsl(168 38% 17% / 0.35)",
+          600: "hsl(168 36% 26%)",
+          700: "hsl(var(--primary))",
+          800: "hsl(168 42% 12%)",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -72,7 +77,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("flowbite/plugin"), require("tailwindcss-animate")],
 };
 
 export default config;

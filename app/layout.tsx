@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { FlowbiteThemeProvider } from "@/components/providers/FlowbiteThemeProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
@@ -73,10 +74,12 @@ export default function RootLayout({
             <MaintenanceBannerSpacer />
           </>
         ) : null}
-        <Navbar maintenanceActive={maintenance} />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <WhatsAppFloat />
+        <FlowbiteThemeProvider>
+          <Navbar maintenanceActive={maintenance} />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <WhatsAppFloat />
+        </FlowbiteThemeProvider>
       </body>
     </html>
   );

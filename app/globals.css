@@ -4,6 +4,8 @@
 
 @layer base {
   :root {
+    /* Matches sticky navbar height so hero imagery can extend to the viewport top */
+    --navbar-h: 3.75rem;
     --background: 40 33% 97%;
     --foreground: 168 30% 14%;
     --card: 40 30% 99%;

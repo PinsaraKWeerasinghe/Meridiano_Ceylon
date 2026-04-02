@@ -46,7 +46,7 @@ export function HeroSlideshow({
             src={first.src}
             alt=""
             fill
-            className="object-cover object-center"
+            className="object-cover object-top"
             sizes="100vw"
             priority
             quality={85}
@@ -70,7 +70,7 @@ export function HeroSlideshow({
             src={slide.src}
             alt=""
             fill
-            className="object-cover object-center"
+            className="object-cover object-top"
             sizes="100vw"
             priority={i === 0}
             quality={85}
