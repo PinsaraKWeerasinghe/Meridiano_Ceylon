@@ -5,7 +5,7 @@
 @layer base {
   :root {
     /* Fixed strip height: hero `-mt` + `pt` use this; keep in sync with Navbar py + logo */
-    --navbar-h: 3.75rem;
+    --navbar-h: 4.25rem;
     --background: 40 33% 97%;
     /* Primary UI: dark navy blue; accent teal #0B7A73 */
     --foreground: 226 48% 14%;
