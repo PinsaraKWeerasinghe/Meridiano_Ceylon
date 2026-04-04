@@ -52,7 +52,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
           alt={LOGO_ALT}
           width={280}
           height={82}
-          className="h-8 w-auto max-w-[min(52vw,220px)] sm:h-9 md:max-w-[260px]"
+          className="h-20 w-auto max-w-[min(70vw,520px)] sm:h-24 sm:max-w-[560px] md:h-28 md:max-w-[640px]"
           priority
         />
       </NavbarBrand>
