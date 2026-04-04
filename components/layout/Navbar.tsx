@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Button,
   Navbar as FlowbiteNavbar,
   NavbarBrand,
   NavbarCollapse,
@@ -38,9 +37,26 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
   return (
     <FlowbiteNavbar
       fluid
-      border
+      theme={{
+        collapse: {
+          base: "w-full border-0 bg-black/25 backdrop-blur-sm md:block md:w-auto md:bg-transparent md:backdrop-blur-none",
+          list: "mt-4 flex flex-col md:mt-0 md:flex-row md:space-x-8 md:text-sm md:font-medium",
+        },
+        toggle: {
+          base: "inline-flex items-center rounded-lg p-2 text-goldMint hover:bg-goldMint/15 hover:text-goldMint focus:outline-none focus:ring-2 focus:ring-goldMint/35 md:hidden dark:text-goldMint dark:hover:bg-goldMint/15 dark:focus:ring-goldMint/35",
+          icon: "h-6 w-6 shrink-0",
+          title: "sr-only",
+        },
+        link: {
+          base: "block py-2 pl-3 pr-4 transition-colors duration-150 md:p-0",
+          active: {
+            on: "bg-lagoon/15 text-white [text-shadow:0_0_12px_rgba(255,255,255,0.45)] md:bg-transparent md:font-semibold md:text-white md:[text-shadow:0_0_14px_rgba(255,255,255,0.4)] dark:bg-lagoon/15 dark:text-white dark:[text-shadow:0_0_12px_rgba(255,255,255,0.35)]",
+            off: "text-goldMint hover:bg-goldMint/15 md:hover:bg-transparent md:text-goldMint md:hover:text-white/90 dark:text-goldMint dark:hover:bg-goldMint/15 md:dark:hover:bg-transparent md:dark:hover:text-white/90",
+          },
+        },
+      }}
       className={cn(
-        "sticky z-50 min-h-[var(--navbar-h)] border-border bg-background/50 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:border-border dark:bg-background/50",
+        "sticky z-50 min-h-[var(--navbar-h)] border-0 bg-black/25 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:bg-black/25",
         maintenanceActive
           ? "-mt-px top-[var(--maintenance-strip-h,4.75rem)]"
           : "top-0",
@@ -57,25 +73,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         />
       </NavbarBrand>
 
-      <div className="flex items-center gap-2 md:order-2">
-        <Button
-          as={Link}
-          href="/#build-your-journey"
-          size="sm"
-          color="default"
-          className="hidden md:inline-flex"
-        >
-          Build journey
-        </Button>
-        <Button
-          as={Link}
-          href="/#build-your-journey"
-          size="xs"
-          color="light"
-          className="md:hidden"
-        >
-          Build
-        </Button>
+      <div className="flex items-center md:order-2">
         <NavbarToggle />
       </div>
 
