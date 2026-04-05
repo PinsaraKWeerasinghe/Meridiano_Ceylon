@@ -1,4 +1,4 @@
-/** Public paths for fixed-package image pairs — matches `public/images/tours/...`. */
+/** Public paths for slideshow image pairs — fixed, specialty, add-ons (`public/images/tours/...`). */
 export const fixedPackageGalleryById: Record<string, string[]> = {
   "fixed-5-opt1": [
     "/images/tours/5_days/opt_1/image_4.jpg",
@@ -39,5 +39,37 @@ export const fixedPackageGalleryById: Record<string, string[]> = {
   "fixed-16-opt1": [
     "/images/tours/16_days/opt_1/image_21.jpg",
     "/images/tours/16_days/opt_1/image_24.jpg",
+  ],
+  "spec-nightlife": [
+    "/images/tours/10_days/opt_4/image_14.jpg",
+    "/images/tours/10_days/opt_4/image_23.jpg",
+  ],
+  "spec-shopping": [
+    "/images/tours/7_days/opt_2/image_16.jpg",
+    "/images/tours/7_days/opt_2/image_3.jpg",
+  ],
+  "spec-volunteer": [
+    "/images/tours/5_days/opt_3/image_10.jpg",
+    "/images/tours/5_days/opt_3/image_11.jpg",
+  ],
+  "spec-photo": [
+    "/images/tours/16_days/opt_1/image_21.jpg",
+    "/images/tours/16_days/opt_1/image_24.jpg",
+  ],
+  "spec-beach": [
+    "/images/tours/5_days/opt_2/image_2.jpg",
+    "/images/tours/5_days/opt_2/image_24.jpg",
+  ],
+  "spec-longterm": [
+    "/images/tours/10_days/opt_1/image_15.jpg",
+    "/images/tours/10_days/opt_1/image_8.jpg",
+  ],
+  "spec-luxury": [
+    "/images/tours/10_days/opt_2/image_13.jpg",
+    "/images/tours/10_days/opt_2/image_23.jpg",
+  ],
+  "spec-drop-only": [
+    "/images/tours/7_days/opt_1/image_20.jpg",
+    "/images/tours/7_days/opt_1/image_6.jpg",
   ],
 };

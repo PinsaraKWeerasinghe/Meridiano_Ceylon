@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Hero } from "@/components/home/Hero";
 import { BuildJourneyForm } from "@/components/home/BuildJourneyForm";
-import { TourCard } from "@/components/tours/TourCard";
+import { HomeAddonsSection } from "@/components/home/HomeAddonsSection";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
-import { fixedPackages, specialtyTours } from "@/data/tours";
+import { fixedPackagesFirstPerDuration, specialtyTours } from "@/data/tours";
 import {
   packagesGreenCard,
   packagesGreenPlaceholder,
@@ -36,7 +36,7 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="mt-10 flex flex-col gap-14">
-            {fixedPackages.map((tour, index) => (
+            {fixedPackagesFirstPerDuration.map((tour, index) => (
               <FixedPackagePanel
                 key={tour.id}
                 tour={tour}
@@ -44,11 +44,16 @@ export default function HomePage() {
                 cardClassName={packagesGreenCard}
                 placeholderClassName={packagesGreenPlaceholder}
                 slideshowClassName={packagesGreenSlideshow}
+                scrollRevealImages
+                verticallyCenterCardContent
+                alignTextTowardImages
               />
             ))}
           </div>
         </div>
       </section>
+
+      <HomeAddonsSection />
 
       <section className="border-t border-lagoon/15 bg-lagoon/10 px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
@@ -58,8 +63,8 @@ export default function HomePage() {
                 Specialty tours
               </h2>
               <p className="mt-2 max-w-xl text-sm text-stone-700">
-                Nightlife, long stays, shopping, volunteering, photography,
-                beach sports, luxury, and groups — layered onto your rhythm.
+                Long stays, luxury, and drop-only transfers — layered onto your
+                rhythm.
               </p>
             </div>
             <Link
@@ -69,9 +74,17 @@ export default function HomePage() {
               Explore specialties
             </Link>
           </div>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {specialtyTours.slice(0, 6).map((tour) => (
-              <TourCard key={tour.id} tour={tour} className={packagesGreenCard} />
+          <div className="mt-10 flex flex-col gap-14">
+            {specialtyTours.map((tour, index) => (
+              <FixedPackagePanel
+                key={tour.id}
+                tour={tour}
+                index={index}
+                cardClassName={packagesGreenCard}
+                placeholderClassName={packagesGreenPlaceholder}
+                slideshowClassName={packagesGreenSlideshow}
+                scrollRevealImages
+              />
             ))}
           </div>
         </div>

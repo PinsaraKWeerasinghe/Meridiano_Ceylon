@@ -4,7 +4,7 @@ import { HeroSlideshow } from "@/components/home/HeroSlideshow";
 
 export function Hero() {
   return (
-    <section className="relative -mt-[var(--navbar-h)] min-h-screen min-h-[100dvh] w-full overflow-hidden bg-forest text-cream">
+    <section className="relative min-h-screen min-h-[100dvh] w-full overflow-hidden bg-forest text-cream">
       <HeroSlideshow slides={heroSlides} intervalMs={6500} />
       <div
         className="absolute inset-0 z-[2] bg-gradient-to-b from-black/45 via-black/38 to-black/50"

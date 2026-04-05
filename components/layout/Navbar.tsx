@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   Navbar as FlowbiteNavbar,
   NavbarBrand,
@@ -31,10 +32,59 @@ type NavbarProps = {
   maintenanceActive?: boolean;
 };
 
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
+}
+
 export function Navbar({ maintenanceActive = false }: NavbarProps) {
   const pathname = usePathname();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const [scrollHidden, setScrollHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+
+    const onScroll = () => {
+      const y = window.scrollY || document.documentElement.scrollTop;
+      const threshold = 72;
+
+      if (y < 12) {
+        setScrollHidden(false);
+      } else if (y > lastScrollY.current && y > threshold) {
+        setScrollHidden(true);
+      } else if (y < lastScrollY.current) {
+        setScrollHidden(false);
+      }
+      lastScrollY.current = y;
+    };
+
+    lastScrollY.current = window.scrollY || 0;
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [prefersReducedMotion]);
+
+  const hideOnScroll = !prefersReducedMotion && scrollHidden;
 
   return (
+    <div
+      className={cn(
+        "fixed left-0 right-0 z-50 transition-transform duration-300 ease-out motion-reduce:transition-none",
+        maintenanceActive
+          ? "top-[var(--maintenance-strip-h,4.75rem)]"
+          : "top-0",
+        hideOnScroll &&
+          "pointer-events-none -translate-y-full motion-reduce:translate-y-0 motion-reduce:pointer-events-auto",
+      )}
+    >
     <FlowbiteNavbar
       fluid
       theme={{
@@ -56,10 +106,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         },
       }}
       className={cn(
-        "sticky z-50 min-h-[var(--navbar-h)] border-0 bg-black/25 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:bg-black/25",
-        maintenanceActive
-          ? "-mt-px top-[var(--maintenance-strip-h,4.75rem)]"
-          : "top-0",
+        "z-50 min-h-[var(--navbar-h)] w-full border-0 bg-black/25 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:bg-black/25",
       )}
     >
       <NavbarBrand as={Link} href="/" className="shrink-0 gap-2 sm:gap-3">
@@ -90,5 +137,6 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         ))}
       </NavbarCollapse>
     </FlowbiteNavbar>
+    </div>
   );
 }

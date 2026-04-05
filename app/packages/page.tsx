@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { TourCard } from "@/components/tours/TourCard";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
-import { fixedPackages, specialtyTours } from "@/data/tours";
+import { addonTours, fixedPackages, specialtyTours } from "@/data/tours";
 import {
   packagesGreenCard,
   packagesGreenPlaceholder,
@@ -20,8 +19,8 @@ export default function PackagesPage() {
           Packages &amp; tours
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-stone-700">
-          Fixed itineraries anchor your dates; specialty experiences layer on
-          the details that matter to you. Enquire via{" "}
+          Fixed itineraries anchor your dates; add-ons and specialty experiences
+          layer on the details that matter to you. Enquire via{" "}
           <em>Build your journey</em> or WhatsApp for a tailored quote.
         </p>
 
@@ -37,6 +36,32 @@ export default function PackagesPage() {
               cardClassName={packagesGreenCard}
               placeholderClassName={packagesGreenPlaceholder}
               slideshowClassName={packagesGreenSlideshow}
+              verticallyCenterCardContent
+              alignTextTowardImages
+            />
+          ))}
+        </div>
+
+        <h2
+          id="addons"
+          className="mt-16 scroll-mt-24 font-serif text-2xl font-semibold text-forest"
+        >
+          Add-ons
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm text-stone-700">
+          Optional layers — nightlife, retail, beach sports, volunteering, and
+          photography — designed to bolt onto your core itinerary.
+        </p>
+        <div className="mt-8 flex flex-col gap-14">
+          {addonTours.map((tour, index) => (
+            <FixedPackagePanel
+              key={tour.id}
+              tour={tour}
+              index={index}
+              cardClassName={packagesGreenCard}
+              placeholderClassName={packagesGreenPlaceholder}
+              slideshowClassName={packagesGreenSlideshow}
+              verticallyCenterCardContent
             />
           ))}
         </div>
@@ -47,12 +72,16 @@ export default function PackagesPage() {
         >
           Specialty tours
         </h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {specialtyTours.map((tour) => (
-            <TourCard
+        <div className="mt-8 flex flex-col gap-14">
+          {specialtyTours.map((tour, index) => (
+            <FixedPackagePanel
               key={tour.id}
               tour={tour}
-              className={packagesGreenCard}
+              index={index}
+              cardClassName={packagesGreenCard}
+              placeholderClassName={packagesGreenPlaceholder}
+              slideshowClassName={packagesGreenSlideshow}
+              verticallyCenterCardContent
             />
           ))}
         </div>
