@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
+import { packagesGreenCard } from "@/lib/packages-section-theme";
 
 export const metadata: Metadata = {
   title: "Meridiano Care Promise",
@@ -7,18 +8,18 @@ export const metadata: Metadata = {
 
 export default function CarePage() {
   return (
-    <div className="bg-cream px-4 py-12 sm:px-6 sm:py-16">
+    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
         <h1 className="font-serif text-4xl font-semibold text-forest">
           Meridiano Care Promise
         </h1>
-        <p className="mt-3 text-sm text-stone-600">
+        <p className="mt-3 max-w-2xl text-sm text-stone-700">
           Medical and safety support designed for real journeys — not fine
           print on a generic policy.
         </p>
 
         <div className="mt-8 space-y-6">
-          <Card>
+          <Card className={packagesGreenCard}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               24/7 support
             </h2>
@@ -27,7 +28,7 @@ export default function CarePage() {
               the road.
             </p>
           </Card>
-          <Card>
+          <Card className={packagesGreenCard}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               Free transport
             </h2>
@@ -36,7 +37,7 @@ export default function CarePage() {
               you need urgent care.
             </p>
           </Card>
-          <Card>
+          <Card className={packagesGreenCard}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               Hospitalization
             </h2>

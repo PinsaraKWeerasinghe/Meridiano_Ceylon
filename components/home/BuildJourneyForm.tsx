@@ -126,7 +126,7 @@ export function BuildJourneyForm() {
   return (
     <section
       id="build-your-journey"
-      className="scroll-mt-24 bg-cream px-4 py-16 sm:px-6"
+      className="scroll-mt-24 bg-lagoon/10 px-4 py-16 sm:px-6"
     >
       <div className="mx-auto max-w-4xl">
         <h2 className="text-center font-serif text-3xl font-semibold text-forest sm:text-4xl">

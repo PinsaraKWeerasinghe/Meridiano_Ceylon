@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
+import { packagesGreenCard } from "@/lib/packages-section-theme";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "About us",
@@ -7,12 +9,17 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="bg-cream px-4 py-12 sm:px-6 sm:py-16">
+    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
         <h1 className="font-serif text-4xl font-semibold text-forest">
           About us
         </h1>
-        <Card className="mt-8 space-y-6 text-sm leading-relaxed text-stone-700">
+        <Card
+          className={cn(
+            "mt-8 space-y-6 text-sm leading-relaxed text-stone-700",
+            packagesGreenCard,
+          )}
+        >
           <section>
             <h2 className="font-serif text-xl font-semibold text-forest">
               Who we are

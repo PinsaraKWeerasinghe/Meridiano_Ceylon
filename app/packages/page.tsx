@@ -2,16 +2,15 @@ import type { Metadata } from "next";
 import { TourCard } from "@/components/tours/TourCard";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
 import { fixedPackages, specialtyTours } from "@/data/tours";
+import {
+  packagesGreenCard,
+  packagesGreenPlaceholder,
+  packagesGreenSlideshow,
+} from "@/lib/packages-section-theme";
 
 export const metadata: Metadata = {
   title: "Packages & tours",
 };
-
-const packagesGreenCard =
-  "border-lagoon/30 bg-lagoon/5 shadow-sm shadow-lagoon/10";
-const packagesGreenPlaceholder =
-  "border border-lagoon/20 bg-lagoon/10 text-lagoon/70";
-const packagesGreenSlideshow = "bg-lagoon/15";
 
 export default function PackagesPage() {
   return (

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { StarRatingInput } from "@/components/ui/StarRatingInput";
+import { packagesGreenCard } from "@/lib/packages-section-theme";
+import { cn } from "@/lib/utils";
 import { reviewTourOptions } from "@/data/tours";
 
 export function ReviewForm() {
@@ -30,11 +32,11 @@ export function ReviewForm() {
 
   if (submitted) {
     return (
-      <Card className="border-lagoon/25 text-center shadow-lagoon/10">
+      <Card className={cn("text-center", packagesGreenCard)}>
         <p className="font-serif text-xl font-semibold text-forest">
           Thank you, {name.trim()}!
         </p>
-        <p className="mt-2 text-sm text-stone-600">
+        <p className="mt-2 text-sm text-stone-700">
           Your feedback means the world to us. This demo does not store reviews
           yet — our team will enable submissions soon.
         </p>
@@ -43,7 +45,7 @@ export function ReviewForm() {
   }
 
   return (
-    <Card className="border-lagoon/25 shadow-sm shadow-lagoon/10">
+    <Card className={packagesGreenCard}>
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
           <label htmlFor="review-name" className="text-sm font-medium text-forest">

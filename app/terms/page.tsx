@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
+import { packagesGreenCard } from "@/lib/packages-section-theme";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions",
@@ -7,18 +9,18 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="bg-cream px-4 py-12 sm:px-6 sm:py-16">
+    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
         <h1 className="font-serif text-4xl font-semibold text-forest">
           Terms &amp; Conditions
         </h1>
-        <p className="mt-3 text-sm text-stone-600">
+        <p className="mt-3 max-w-2xl text-sm text-stone-700">
           Plain-language summary of how booking, payments, cancellations, and
           on-tour responsibilities work.
         </p>
 
         <div className="mt-8 space-y-8 text-sm leading-relaxed text-stone-700">
-          <Card className="space-y-3">
+          <Card className={cn("space-y-3", packagesGreenCard)}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               1. Booking &amp; security deposit
             </h2>
@@ -38,7 +40,7 @@ export default function TermsPage() {
             </ul>
           </Card>
 
-          <Card className="space-y-3">
+          <Card className={cn("space-y-3", packagesGreenCard)}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               2. Cancellation &amp; refunds
             </h2>
@@ -64,7 +66,7 @@ export default function TermsPage() {
             </ul>
           </Card>
 
-          <Card className="space-y-3">
+          <Card className={cn("space-y-3", packagesGreenCard)}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               3. Care Promise (medical &amp; safety)
             </h2>
@@ -85,7 +87,7 @@ export default function TermsPage() {
             </ul>
           </Card>
 
-          <Card className="space-y-3">
+          <Card className={cn("space-y-3", packagesGreenCard)}>
             <h2 className="font-serif text-lg font-semibold text-forest">
               4. Vehicle &amp; driver rules
             </h2>
