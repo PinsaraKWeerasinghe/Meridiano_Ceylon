@@ -2,14 +2,27 @@ import type { TourItem } from "@/data/tours";
 import { fixedPackageGalleryById } from "@/data/tour-galleries";
 import { Card } from "@/components/ui/Card";
 import { TourGallerySlideshow } from "@/components/tours/TourGallerySlideshow";
+import { cn } from "@/lib/utils";
 
 type FixedPackagePanelProps = {
   tour: TourItem;
   /** Even index (0,2,4…): text left, images right. Odd index: images left, text right. */
   index: number;
+  /** Optional card styles (e.g. packages page green theme). */
+  cardClassName?: string;
+  /** Optional empty-gallery placeholder styles. */
+  placeholderClassName?: string;
+  /** Optional slideshow frame (replaces default gray behind images). */
+  slideshowClassName?: string;
 };
 
-export function FixedPackagePanel({ tour, index }: FixedPackagePanelProps) {
+export function FixedPackagePanel({
+  tour,
+  index,
+  cardClassName,
+  placeholderClassName,
+  slideshowClassName,
+}: FixedPackagePanelProps) {
   const srcs = fixedPackageGalleryById[tour.id] ?? [];
 
   return (
@@ -20,7 +33,12 @@ export function FixedPackagePanel({ tour, index }: FixedPackagePanelProps) {
           : "flex w-full flex-row items-stretch gap-3 sm:gap-6 md:gap-10"
       }
     >
-      <Card className="flex min-w-0 flex-1 basis-0 flex-col justify-center transition hover:shadow-md">
+      <Card
+        className={cn(
+          "flex min-w-0 flex-1 basis-0 flex-col justify-center transition hover:shadow-md",
+          cardClassName,
+        )}
+      >
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-serif text-xl font-semibold text-forest">
             {tour.title}
@@ -35,9 +53,14 @@ export function FixedPackagePanel({ tour, index }: FixedPackagePanelProps) {
       </Card>
       <div className="min-w-0 flex-1 basis-0">
         {srcs.length > 0 ? (
-          <TourGallerySlideshow srcs={srcs} />
+          <TourGallerySlideshow srcs={srcs} className={slideshowClassName} />
         ) : (
-          <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-stone-100 text-sm text-stone-400">
+          <div
+            className={cn(
+              "flex aspect-[4/3] items-center justify-center rounded-xl bg-stone-100 text-sm text-stone-400",
+              placeholderClassName,
+            )}
+          >
             Gallery coming soon
           </div>
         )}

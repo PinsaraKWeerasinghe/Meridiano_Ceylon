@@ -7,14 +7,20 @@ export const metadata: Metadata = {
   title: "Packages & tours",
 };
 
+const packagesGreenCard =
+  "border-lagoon/30 bg-lagoon/5 shadow-sm shadow-lagoon/10";
+const packagesGreenPlaceholder =
+  "border border-lagoon/20 bg-lagoon/10 text-lagoon/70";
+const packagesGreenSlideshow = "bg-lagoon/15";
+
 export default function PackagesPage() {
   return (
-    <div className="bg-cream px-4 py-12 sm:px-6 sm:py-16">
+    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-6xl">
         <h1 className="font-serif text-4xl font-semibold text-forest">
           Packages &amp; tours
         </h1>
-        <p className="mt-3 max-w-2xl text-sm text-stone-600">
+        <p className="mt-3 max-w-2xl text-sm text-stone-700">
           Fixed itineraries anchor your dates; specialty experiences layer on
           the details that matter to you. Enquire via{" "}
           <em>Build your journey</em> or WhatsApp for a tailored quote.
@@ -25,7 +31,14 @@ export default function PackagesPage() {
         </h2>
         <div className="mt-8 flex flex-col gap-14">
           {fixedPackages.map((tour, index) => (
-            <FixedPackagePanel key={tour.id} tour={tour} index={index} />
+            <FixedPackagePanel
+              key={tour.id}
+              tour={tour}
+              index={index}
+              cardClassName={packagesGreenCard}
+              placeholderClassName={packagesGreenPlaceholder}
+              slideshowClassName={packagesGreenSlideshow}
+            />
           ))}
         </div>
 
@@ -37,7 +50,11 @@ export default function PackagesPage() {
         </h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {specialtyTours.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
+            <TourCard
+              key={tour.id}
+              tour={tour}
+              className={packagesGreenCard}
+            />
           ))}
         </div>
       </div>

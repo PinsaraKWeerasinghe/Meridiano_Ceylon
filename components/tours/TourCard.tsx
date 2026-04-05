@@ -1,13 +1,20 @@
 import type { TourItem } from "@/data/tours";
 import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 
 interface TourCardProps {
   tour: TourItem;
+  className?: string;
 }
 
-export function TourCard({ tour }: TourCardProps) {
+export function TourCard({ tour, className }: TourCardProps) {
   return (
-    <Card className="flex h-full flex-col transition hover:shadow-md">
+    <Card
+      className={cn(
+        "flex h-full flex-col transition hover:shadow-md",
+        className,
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-serif text-xl font-semibold text-forest">
           {tour.title}
