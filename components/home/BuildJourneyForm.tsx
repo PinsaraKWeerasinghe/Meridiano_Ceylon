@@ -19,6 +19,7 @@ import {
   Waves,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 import {
   type BudgetTier,
   type InsuranceChoice,
@@ -136,7 +137,7 @@ export function BuildJourneyForm() {
           and reply on WhatsApp with places and pricing.
         </p>
 
-        <Card className="mt-10">
+        <Card className="mt-10 border-lagoon/25 shadow-sm shadow-lagoon/10">
           <form onSubmit={handleSubmit} className="space-y-10">
             <fieldset>
               <legend className="text-sm font-semibold text-forest">
@@ -149,7 +150,7 @@ export function BuildJourneyForm() {
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                   />
                 </label>
                 <label className="block text-sm text-stone-600">
@@ -158,7 +159,7 @@ export function BuildJourneyForm() {
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                   />
                 </label>
               </div>
@@ -176,7 +177,7 @@ export function BuildJourneyForm() {
                     min={1}
                     value={adults}
                     onChange={(e) => setAdults(Number(e.target.value) || 1)}
-                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                   />
                 </label>
                 <label className="block text-sm text-stone-600">
@@ -186,7 +187,7 @@ export function BuildJourneyForm() {
                     min={0}
                     value={children}
                     onChange={(e) => setChildren(Math.max(0, Number(e.target.value)))}
-                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+                    className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                   />
                 </label>
                 <div className="flex flex-col justify-end">
@@ -196,11 +197,12 @@ export function BuildJourneyForm() {
                     role="switch"
                     aria-checked={travelingWithPets}
                     onClick={() => setTravelingWithPets((v) => !v)}
-                    className={`mt-1 flex h-11 w-full items-center justify-center rounded-xl border text-sm font-medium transition ${
+                    className={cn(
+                      "mt-1 flex h-11 w-full items-center justify-center rounded-xl border text-sm font-medium transition",
                       travelingWithPets
-                        ? "border-forest bg-forest text-cream"
-                        : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
-                    }`}
+                        ? "border-lagoon/50 bg-lagoon text-cream shadow-sm shadow-lagoon/20"
+                        : "border-stone-200 bg-white text-stone-700 hover:border-lagoon/25",
+                    )}
                   >
                     {travelingWithPets ? "Traveling with pets" : "No pets"}
                   </button>
@@ -212,7 +214,7 @@ export function BuildJourneyForm() {
               <legend className="text-sm font-semibold text-forest">
                 Tour type
               </legend>
-              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-stone-100 p-1">
+              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-lagoon/10 p-1 ring-1 ring-lagoon/15">
                 {(
                   [
                     { id: "private" as const, label: "Private tour" },
@@ -223,11 +225,12 @@ export function BuildJourneyForm() {
                     key={opt.id}
                     type="button"
                     onClick={() => setTourMode(opt.id)}
-                    className={`rounded-lg py-2.5 text-sm font-medium transition ${
+                    className={cn(
+                      "rounded-lg py-2.5 text-sm font-medium transition",
                       tourMode === opt.id
-                        ? "bg-white text-forest shadow-sm"
-                        : "text-stone-600 hover:text-forest"
-                    }`}
+                        ? "bg-white text-forest shadow-sm ring-1 ring-lagoon/25"
+                        : "text-stone-600 hover:text-forest",
+                    )}
                   >
                     {opt.label}
                   </button>
@@ -248,11 +251,12 @@ export function BuildJourneyForm() {
                       key={id}
                       type="button"
                       onClick={() => setVibes((v) => toggleVibe(v, id))}
-                      className={`flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 text-center text-xs font-medium transition sm:text-sm ${
+                      className={cn(
+                        "flex flex-col items-center gap-2 rounded-2xl border px-2 py-4 text-center text-xs font-medium transition sm:text-sm",
                         on
-                          ? "border-gold/80 bg-gold/10 text-forest"
-                          : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
-                      }`}
+                          ? "border-lagoon/40 bg-lagoon/10 text-forest shadow-sm shadow-lagoon/10"
+                          : "border-stone-200 bg-white text-stone-600 hover:border-lagoon/25",
+                      )}
                     >
                       <Icon className="h-6 w-6 shrink-0" strokeWidth={1.5} />
                       <span className="leading-tight">{VIBE_LABELS[id]}</span>
@@ -278,11 +282,12 @@ export function BuildJourneyForm() {
                     key={opt.id}
                     type="button"
                     onClick={() => setTransport(opt.id)}
-                    className={`flex-1 rounded-xl border py-3 text-sm font-medium transition ${
+                    className={cn(
+                      "flex-1 rounded-xl border py-3 text-sm font-medium transition",
                       transport === opt.id
-                        ? "border-forest bg-forest text-cream"
-                        : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
-                    }`}
+                        ? "border-lagoon/40 bg-lagoon/10 text-forest shadow-sm shadow-lagoon/10"
+                        : "border-stone-200 bg-white text-stone-700 hover:border-lagoon/25",
+                    )}
                   >
                     {opt.label}
                   </button>
@@ -306,11 +311,12 @@ export function BuildJourneyForm() {
                     key={opt.id}
                     type="button"
                     onClick={() => setBudget(opt.id)}
-                    className={`rounded-xl border py-3 text-sm font-medium transition ${
+                    className={cn(
+                      "rounded-xl border py-3 text-sm font-medium transition",
                       budget === opt.id
-                        ? "border-gold bg-gold/15 text-forest"
-                        : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
-                    }`}
+                        ? "border-lagoon/40 bg-lagoon/10 text-forest shadow-sm shadow-lagoon/10"
+                        : "border-stone-200 bg-white text-stone-700 hover:border-lagoon/25",
+                    )}
                   >
                     {opt.label}
                   </button>
@@ -339,7 +345,12 @@ export function BuildJourneyForm() {
                 ).map((opt) => (
                   <label
                     key={opt.id}
-                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-3 text-sm"
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 text-sm transition",
+                      insurance === opt.id
+                        ? "border-lagoon/35 bg-lagoon/5 shadow-sm shadow-lagoon/10"
+                        : "border-stone-200 bg-stone-50/50 hover:border-lagoon/20",
+                    )}
                   >
                     <input
                       type="radio"
@@ -359,7 +370,7 @@ export function BuildJourneyForm() {
                       value={insurancePolicyNumber}
                       onChange={(e) => setInsurancePolicyNumber(e.target.value)}
                       placeholder="Required if using your own insurance"
-                      className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+                      className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                     />
                   </label>
                 ) : null}
@@ -374,7 +385,7 @@ export function BuildJourneyForm() {
 
             <button
               type="submit"
-              className="w-full rounded-full bg-forest py-4 text-sm font-semibold text-cream transition hover:bg-forest-hover"
+              className="w-full rounded-full bg-gold py-4 text-sm font-semibold text-cream transition hover:bg-[#1d5349]"
             >
               Send to WhatsApp
             </button>

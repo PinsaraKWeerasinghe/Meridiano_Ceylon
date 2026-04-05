@@ -34,10 +34,10 @@ export function StarRatingInput({
               aria-label={`${n} star${n > 1 ? "s" : ""}`}
               aria-pressed={active}
               onClick={() => onChange(n)}
-              className="rounded p-1 text-gold transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-forest"
+              className="rounded p-1 text-lagoon transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-lagoon"
             >
               <Star
-                className={`h-8 w-8 ${active ? "fill-gold" : "fill-transparent"}`}
+                className={`h-8 w-8 ${active ? "fill-lagoon" : "fill-transparent"}`}
                 strokeWidth={1.5}
               />
             </button>

@@ -30,7 +30,7 @@ export function ReviewForm() {
 
   if (submitted) {
     return (
-      <Card className="text-center">
+      <Card className="border-lagoon/25 text-center shadow-lagoon/10">
         <p className="font-serif text-xl font-semibold text-forest">
           Thank you, {name.trim()}!
         </p>
@@ -43,7 +43,7 @@ export function ReviewForm() {
   }
 
   return (
-    <Card>
+    <Card className="border-lagoon/25 shadow-sm shadow-lagoon/10">
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
           <label htmlFor="review-name" className="text-sm font-medium text-forest">
@@ -54,7 +54,7 @@ export function ReviewForm() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
           />
         </div>
 
@@ -66,7 +66,7 @@ export function ReviewForm() {
             id="review-tour"
             value={tourType}
             onChange={(e) => setTourType(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
           >
             {reviewTourOptions.map((opt) => (
               <option key={opt} value={opt}>
@@ -86,7 +86,7 @@ export function ReviewForm() {
             value={story}
             onChange={(e) => setStory(e.target.value)}
             placeholder="What was the highlight of your journey?"
-            className="mt-1 w-full resize-y rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2.5 text-stone-900 outline-none ring-forest/20 focus:ring-2"
+            className="mt-1 w-full resize-y rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
           />
         </div>
 
@@ -100,7 +100,7 @@ export function ReviewForm() {
             accept="image/*"
             multiple
             onChange={(e) => setFiles(e.target.files)}
-            className="mt-2 block w-full text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-forest file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cream hover:file:bg-forest-hover"
+            className="mt-2 block w-full text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-lagoon file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cream hover:file:bg-lagoon/90"
           />
           {files && files.length > 0 ? (
             <ul className="mt-2 text-xs text-stone-500">
