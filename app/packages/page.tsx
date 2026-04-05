@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { TourCard } from "@/components/tours/TourCard";
+import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
 import { fixedPackages, specialtyTours } from "@/data/tours";
 
 export const metadata: Metadata = {
@@ -22,9 +23,9 @@ export default function PackagesPage() {
         <h2 className="mt-14 font-serif text-2xl font-semibold text-forest">
           Fixed packages
         </h2>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          {fixedPackages.map((tour) => (
-            <TourCard key={tour.id} tour={tour} />
+        <div className="mt-8 flex flex-col gap-14">
+          {fixedPackages.map((tour, index) => (
+            <FixedPackagePanel key={tour.id} tour={tour} index={index} />
           ))}
         </div>
 

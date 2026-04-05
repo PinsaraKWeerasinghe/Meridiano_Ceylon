@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Hero } from "@/components/home/Hero";
 import { BuildJourneyForm } from "@/components/home/BuildJourneyForm";
 import { TourCard } from "@/components/tours/TourCard";
+import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
 import { fixedPackages, specialtyTours } from "@/data/tours";
 
 export default function HomePage() {
@@ -29,9 +30,9 @@ export default function HomePage() {
               View all packages
             </Link>
           </div>
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {fixedPackages.map((tour) => (
-              <TourCard key={tour.id} tour={tour} />
+          <div className="mt-10 flex flex-col gap-14">
+            {fixedPackages.map((tour, index) => (
+              <FixedPackagePanel key={tour.id} tour={tour} index={index} />
             ))}
           </div>
         </div>

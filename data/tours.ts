@@ -12,40 +12,84 @@ export interface TourItem {
 
 export const fixedPackages: TourItem[] = [
   {
-    id: "fixed-5",
+    id: "fixed-5-opt1",
     kind: "fixed",
-    title: "Hill Country + Beach",
+    title: "Beach + Safari (Relaxing Tour)",
     duration: "5 days",
     description:
-      "Misty mountains and the south coast in one refined loop — tea country charm paired with ocean calm.",
-    highlights: ["Ella & tea country", "Coastal downtime", "Private driver"],
+      '"No Hurry" – A peaceful journey through the southern coast.',
   },
   {
-    id: "fixed-7",
+    id: "fixed-5-opt2",
     kind: "fixed",
-    title: "Hill Country + Safari + Beach",
+    title: "Hill Country + Beach (Express Tour)",
+    duration: "5 days",
+    description:
+      "A fast-paced journey through culture, mountains, and sea.",
+  },
+  {
+    id: "fixed-5-opt3",
+    kind: "fixed",
+    title: "The Cultural & Highland Express",
+    duration: "5 days",
+    description:
+      "Village life, Ancient History, and the Beautiful Hill Country.",
+  },
+  {
+    id: "fixed-7-opt1",
+    kind: "fixed",
+    title: "Nature & Safari Adventure",
     duration: "7 days",
     description:
-      "The classic triangle: cool highlands, wildlife, and Indian Ocean sunsets.",
-    highlights: ["National park safari", "Hill stations", "Beach finale"],
+      "A journey through the mountains leading to the wild heart of Sri Lanka.",
   },
   {
-    id: "fixed-10",
+    id: "fixed-7-opt2",
     kind: "fixed",
-    title: "Village Culture + Hill Country + Safari + Beach",
+    title: "The Beach & Wildlife Dream",
+    duration: "7 days",
+    description:
+      'A relaxing journey focused on the ocean, coastal culture, and the "Big Game" of the wild.',
+  },
+  {
+    id: "fixed-10-opt1",
+    kind: "fixed",
+    title: "The Ancient & Cultural Grand Tour",
     duration: "10 days",
     description:
-      "Deeper immersion: authentic village life, landscapes, wildlife, and the coast.",
-    highlights: ["Village encounters", "Safari", "Hills & beaches"],
+      "Ancient Cities, UNESCO Heritage, and the Hill Country.",
   },
   {
-    id: "fixed-14",
+    id: "fixed-7-opt3",
     kind: "fixed",
-    title: "Village + Ancient/Ayurvedic + Hill + Safari + Beach",
-    duration: "14 days",
+    title: "The Southern Beach & Wildlife Loop",
+    duration: "7 days",
     description:
-      "Our flagship journey — heritage, wellness undertones, nature, and sea.",
-    highlights: ["Cultural depth", "Ayurvedic options", "Full island story"],
+      "Coastal relaxation, Galle history, and Safari.",
+  },
+  {
+    id: "fixed-10-opt2",
+    kind: "fixed",
+    title: "Wildlife & Wellness Safari",
+    duration: "10 days",
+    description:
+      "A rhythmic journey through nature, ancient history, and spiritual healing.",
+  },
+  {
+    id: "fixed-10-opt3",
+    kind: "fixed",
+    title: "Meridiano Ceylon Special (Hidden Gems)",
+    duration: "10 days",
+    description:
+      "Tracking, Waterfalls, and the best of Wellawaya.",
+  },
+  {
+    id: "fixed-16-opt1",
+    kind: "fixed",
+    title: "North to South Expedition",
+    duration: "16 days",
+    description:
+      "A complete cross-country journey from the northernmost tip to the southern coast of Sri Lanka.",
   },
 ];
 
