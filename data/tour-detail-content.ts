@@ -682,6 +682,150 @@ export const tourDetailsBySlug: Record<string, TourDetailContent> = {
       "Local Treasures: Features unique spots like Buduruwagala and Diyaluma Falls near Wellawaya.",
     ],
   },
+
+  "wildlife-photography-tours": {
+    tourId: "spec-wildlife-photography",
+    slug: "wildlife-photography-tours",
+    pageTitle: "Wildlife Photography Tours",
+    metaDescription:
+      "Professional wildlife photography and media production in Sri Lanka — DWC permits, media visas, drones, and field support.",
+    durationLabel: "Specialty tour",
+    intro: [
+      "Designed for photographers and media crews who need permits, clearances, and reliable access across Sri Lanka’s wild places.",
+    ],
+    specialtyDetail: {
+      tagline: "Professional Access to the Wild",
+      bodyParagraphs: [
+        "Designed exclusively for professional photographers and media crews, this tour focuses on high-end production and technical requirements. We take the administrative burden off your shoulders so you can focus entirely on your craft.",
+      ],
+      highlights: [
+        "Complete documentation: we handle all the heavy lifting, including DWC (Department of Wildlife Conservation) permits, media visas, and government clearances.",
+        "Drone logistics: full assistance with drone registration and flight approvals for aerial cinematography.",
+        "Production support: our team coordinates local access and specialized transport so you are in the right place at the right light.",
+        "Planning: to ensure all legal paperwork is secured, please contact us at least 30 days before your arrival.",
+      ],
+    },
+  },
+
+  "long-stay-holidays": {
+    tourId: "spec-longterm",
+    slug: "long-stay-holidays",
+    pageTitle: "Long-Term Tours (Long-Stay Holidays)",
+    metaDescription:
+      "One month or more in Sri Lanka — coastal, hill country, village, or Colombo bases with Wi-Fi, logistics, and 24/7 support.",
+    durationLabel: "Specialty tour",
+    intro: [
+      "Long stays with independence plus expert help finding the right home base — coast, hills, village, or city.",
+    ],
+    specialtyDetail: {
+      tagline: "Live Like a Local, With the Comfort of a Guest",
+      bodyParagraphs: [
+        "For those who want to truly settle in, our long-term stays (one month or more) offer the perfect balance of independence and expert support. Whether you are working remotely or simply escaping the rush, we find the perfect home base for your rhythm.",
+      ],
+      highlights: [
+        "Coastal retreats: wake up to the sound of the Indian Ocean — perfect for surfing, meditation, or sunset strolls in areas like Mirissa, Hikkaduwa, or Trincomalee.",
+        "Hill country escapes: immerse yourself in the misty mountains and tea plantations of Ella or Nuwara Eliya — ideal for cool weather and hiking.",
+        "Village immersion: stay in a traditional village setting for local life, home-cooked food, and peaceful surroundings.",
+        "Capital city living: stay in vibrant Colombo — dining, shopping, nightlife, and business hubs with modern amenities.",
+      ],
+      highlightSections: [
+        {
+          title: "Included with every long stay",
+          items: [
+            "High-speed Wi-Fi and workspace setups for digital nomads.",
+            "Assistance with laundry, grocery delivery, and local transport (scooter or car rentals).",
+            "Our signature 24/7 Safety & Medical Support for total peace of mind.",
+          ],
+        },
+      ],
+    },
+  },
+
+  "volunteer-program-tours": {
+    tourId: "spec-volunteer-program",
+    slug: "volunteer-program-tours",
+    pageTitle: "Volunteer Program Tours",
+    metaDescription:
+      "Ethical volunteer placements in Sri Lanka — teaching, Ayurvedic programmes, local partners, transport, and 24/7 support.",
+    durationLabel: "Specialty tour",
+    intro: [
+      "Purpose-led travel with ethical placements, logistics handled, and support from arrival to departure.",
+    ],
+    specialtyDetail: {
+      tagline: "Make a Meaningful Impact",
+      bodyParagraphs: [
+        "Travel with purpose and connect deeply with the local community. We bridge the gap between travelers and the heart of Sri Lanka by organizing ethical volunteer opportunities. We handle the logistics so you can focus on making a difference.",
+      ],
+      highlights: [
+        "Teaching programs: share your knowledge in local schools or community centers — English, sports, creative arts — helping empower the next generation.",
+        "Ayurvedic community programmes: learn about ancient healing while assisting in herbal gardens or supporting local wellness initiatives.",
+        "Ethical connections: we partner directly with local leaders so your contribution is respectful, safe, and truly helpful.",
+        "Seamless support: we arrange local transport, safe accommodation, and 24/7 support throughout your stay.",
+      ],
+    },
+  },
+
+  "drop-only-tours": {
+    tourId: "spec-drop-only",
+    slug: "drop-only-tours",
+    pageTitle: "Drop-Only Tours",
+    metaDescription:
+      "One-way and point-to-point transport in Sri Lanka — airports, hotels, and cities with a professional fleet and clear pricing.",
+    durationLabel: "Specialty tour",
+    intro: [
+      "Independent itinerary, professional drivers, and door-to-door transfers when you only need reliable transport.",
+    ],
+    specialtyDetail: {
+      tagline: "Reliable, Professional, One-Way Transport",
+      bodyParagraphs: [
+        "For the independent traveler who has their own itinerary but demands the safety and comfort of a professional service. Whether it is an airport transfer or a journey between cities, we ensure you reach your destination safely and on time.",
+      ],
+      highlightSections: [
+        {
+          title: "How to book your transfer — please provide",
+          items: [
+            "Full name: for your personalized pickup.",
+            "Date & time: your exact schedule for a punctual arrival.",
+            "Number of passengers: so we reserve the right space and comfort.",
+            "Vehicle type: Budget, Standard, or Luxury fleet to suit your style.",
+            "Pick-up & drop-off locations: precise addresses or hotel names for door-to-door service.",
+          ],
+        },
+      ],
+      highlights: [
+        "Professional drivers: safe, courteous, and punctual — they know the best routes across the island.",
+        "Anywhere in Sri Lanka: direct transport from airports, hotels, or cities to your destination.",
+        "Modern fleet: clean, air-conditioned vehicles for solo travelers, families, or groups.",
+        "Fixed rates: transparent pricing with no hidden costs — reliable service from point A to point B.",
+      ],
+      highlightSectionsFirst: true,
+    },
+  },
+
+  "adventure-adrenaline-tour": {
+    tourId: "spec-adventure-adrenaline",
+    slug: "adventure-adrenaline-tour",
+    pageTitle: "Adventure & Adrenaline Tour",
+    metaDescription:
+      "Custom adventure days in Sri Lanka — rafting, paragliding, canyoning, ziplines, and balloon flights at your pace.",
+    durationLabel: "Specialty tour",
+    intro: [
+      "Fully customizable activity-led days — intensity and pace are yours to decide.",
+    ],
+    specialtyDetail: {
+      tagline: "Your Pace, Your Thrill",
+      bodyParagraphs: [
+        "A fully customizable tour where the days and intensity depend entirely on you.",
+      ],
+      highlights: [
+        "White water rafting (Kitulgala): experience the rush of the Kelani River.",
+        "Paragliding & paramotoring: see the coastline and mountains from the clouds.",
+        "Waterfall abseiling & canyoning: natural rock slides and rappelling.",
+        "Zipline experience: soar over the emerald tea estates of Ella on a mega-zipline.",
+        "Hot air ballooning: a breathtaking sunrise flight over the Cultural Triangle.",
+      ],
+    },
+  },
 };
 
 export const tourDetailSlugs = Object.keys(tourDetailsBySlug);

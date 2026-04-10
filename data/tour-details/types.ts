@@ -8,6 +8,16 @@ export type TourDetailPhase = {
   days: TourDetailDay[];
 };
 
+/** Rich copy for specialty tours (no day-by-day itinerary). */
+export type TourSpecialtyDetailBlock = {
+  tagline?: string;
+  bodyParagraphs: string[];
+  highlights?: string[];
+  highlightSections?: { title: string; items: string[] }[];
+  highlightSectionsFirst?: boolean;
+  note?: string;
+};
+
 export type TourDetailContent = {
   tourId: string;
   slug: string;
@@ -32,4 +42,6 @@ export type TourDetailContent = {
   tenDayClientSummary?: boolean;
   /** Extra bullets after the itinerary (e.g. North–South highlights) */
   highlightBullets?: string[];
+  /** When set, the card shows this layout instead of days / phases. */
+  specialtyDetail?: TourSpecialtyDetailBlock;
 };

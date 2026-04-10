@@ -5,6 +5,7 @@ import "./globals.css";
 import { FlowbiteThemeProvider } from "@/components/providers/FlowbiteThemeProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { DigitalBuddyFloat } from "@/components/layout/DigitalBuddyFloat";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
 import {
   MaintenanceBanner,
@@ -74,6 +75,7 @@ export default function RootLayout({
           <Navbar maintenanceActive={maintenance} />
           <main className="flex-1">{children}</main>
           <Footer />
+          <DigitalBuddyFloat />
           <WhatsAppFloat />
         </FlowbiteThemeProvider>
       </body>

@@ -62,6 +62,7 @@ export default function PackagesPage() {
               placeholderClassName={packagesGreenPlaceholder}
               slideshowClassName={packagesGreenSlideshow}
               verticallyCenterCardContent
+              alignTextTowardImages
             />
           ))}
         </div>
@@ -72,6 +73,11 @@ export default function PackagesPage() {
         >
           Specialty tours
         </h2>
+        <p className="mt-3 max-w-2xl text-sm text-stone-700">
+          Tailored for those who seek more than just a holiday. These specialized
+          journeys are designed around your specific passions, ensuring every
+          moment is purposeful and every detail is handled by experts.
+        </p>
         <div className="mt-8 flex flex-col gap-14">
           {specialtyTours.map((tour, index) => (
             <FixedPackagePanel
@@ -82,6 +88,7 @@ export default function PackagesPage() {
               placeholderClassName={packagesGreenPlaceholder}
               slideshowClassName={packagesGreenSlideshow}
               verticallyCenterCardContent
+              alignTextTowardImages
             />
           ))}
         </div>

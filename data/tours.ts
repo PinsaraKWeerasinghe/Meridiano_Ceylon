@@ -1,13 +1,24 @@
 export type TourKind = "fixed" | "addon" | "specialty";
 
+/** Titled bullet block (e.g. “Included with every long stay”) for rich package panels. */
+export type TourHighlightSection = { title: string; items: string[] };
+
 export interface TourItem {
   id: string;
   kind: TourKind;
   title: string;
   /** Shown as a chip on cards/panels; omit when not useful (e.g. add-ons). */
   duration?: string;
+  /** Short blurb; on panels with `bodyParagraphs`, may be empty. */
   description: string;
+  /** Subtitle under the title (specialty / long-form panels). */
+  tagline?: string;
+  /** Multiple body paragraphs; when set, package panels render these instead of `description`. */
+  bodyParagraphs?: string[];
   highlights?: string[];
+  highlightSections?: TourHighlightSection[];
+  /** When true, titled sections render before the main bullet list (e.g. drop-only “how to book”). */
+  highlightSectionsFirst?: boolean;
   note?: string;
   /** When set, fixed-package panels show a “More details” link to this path. */
   detailPath?: string;
@@ -163,25 +174,44 @@ export const addonTours: TourItem[] = [
 
 export const specialtyTours: TourItem[] = [
   {
-    id: "spec-longterm",
+    id: "spec-wildlife-photography",
     kind: "specialty",
-    title: "Long-Term Tours",
+    title: "Wildlife Photography Tours",
     description:
-      "Quiet beaches or village calm for extended stays — ideal for rest or meditation.",
-    highlights: ["Optional scooter or car add-on", "Cooking & laundry via hotel partners"],
+      "Designed for photographers and media crews who need DWC permits, media visas, drone clearances, and production support across Sri Lanka.",
+    detailPath: "/packages/wildlife-photography-tours",
   },
   {
-    id: "spec-luxury",
+    id: "spec-longterm",
     kind: "specialty",
-    title: "Luxury Tours",
-    description: "Premium vehicles, high-end hotels, and spa rituals — fully elevated.",
+    title: "Long-Term Tours (Long-Stay Holidays)",
+    description:
+      "Long stays (one month or more) with the right home base — coast, hills, village, or Colombo — plus Wi-Fi, logistics, and 24/7 support.",
+    detailPath: "/packages/long-stay-holidays",
+  },
+  {
+    id: "spec-volunteer-program",
+    kind: "specialty",
+    title: "Volunteer Program Tours",
+    description:
+      "Ethical volunteer placements with teaching, Ayurvedic programmes, and local partners — we handle transport, stays, and round-the-clock help.",
+    detailPath: "/packages/volunteer-program-tours",
   },
   {
     id: "spec-drop-only",
     kind: "specialty",
-    title: "Drop only tours",
+    title: "Drop-Only Tours",
     description:
-      "Point-to-point transport: we pick you up and drop you at your destination — simple, reliable, and on your schedule.",
+      "Professional one-way and point-to-point transport — airports, hotels, and cities with a modern fleet and clear, fixed pricing.",
+    detailPath: "/packages/drop-only-tours",
+  },
+  {
+    id: "spec-adventure-adrenaline",
+    kind: "specialty",
+    title: "Adventure & Adrenaline Tour",
+    description:
+      "Build your own adventure — rafting, flying, canyoning, ziplines, and ballooning — with intensity and pace set by you.",
+    detailPath: "/packages/adventure-adrenaline-tour",
   },
 ];
 

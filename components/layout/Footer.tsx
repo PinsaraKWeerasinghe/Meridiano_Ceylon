@@ -70,6 +70,14 @@ export function Footer() {
                   Guest reviews
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/digital-buddy"
+                  className="text-cream/90 transition hover:text-cream hover:underline"
+                >
+                  Digital Buddy (backpackers)
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

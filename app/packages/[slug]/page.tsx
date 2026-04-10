@@ -18,7 +18,9 @@ export function generateMetadata({ params }: PageProps): Metadata {
     return { title: "Tour" };
   }
   return {
-    title: `${detail.pageTitle} — ${detail.durationLabel}`,
+    title: detail.specialtyDetail
+      ? detail.pageTitle
+      : `${detail.pageTitle} — ${detail.durationLabel}`,
     description: detail.metaDescription,
   };
 }

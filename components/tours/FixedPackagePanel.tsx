@@ -62,6 +62,89 @@ export function FixedPackagePanel({
     </>
   );
 
+  const highlightsBlock =
+    tour.highlights && tour.highlights.length > 0 ? (
+      <ul className="mt-4 space-y-1 text-sm text-stone-700">
+        {tour.highlights.map((h) => (
+          <li
+            key={h}
+            className={cn(
+              "flex gap-2",
+              alignTextTowardImages && cardOnLeft && "justify-end",
+            )}
+          >
+            {alignTextTowardImages && cardOnLeft ? (
+              <>
+                <span>{h}</span>
+                <span className="text-lagoon" aria-hidden>
+                  ·
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-lagoon" aria-hidden>
+                  ·
+                </span>
+                <span>{h}</span>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    ) : null;
+
+  const highlightSectionsBlock =
+    tour.highlightSections && tour.highlightSections.length > 0
+      ? tour.highlightSections.map((section, si) => (
+          <div
+            key={section.title}
+            className={cn(
+              si === 0
+                ? tour.highlightSectionsFirst
+                  ? "mt-4"
+                  : "mt-5"
+                : "mt-5",
+            )}
+          >
+            <h4
+              className={cn(
+                "text-sm font-semibold text-forest",
+                alignTextTowardImages && cardOnLeft && "text-right",
+              )}
+            >
+              {section.title}
+            </h4>
+            <ul className="mt-2 space-y-1 text-sm text-stone-700">
+              {section.items.map((item, ii) => (
+                <li
+                  key={`${section.title}-${ii}`}
+                  className={cn(
+                    "flex gap-2",
+                    alignTextTowardImages && cardOnLeft && "justify-end",
+                  )}
+                >
+                  {alignTextTowardImages && cardOnLeft ? (
+                    <>
+                      <span>{item}</span>
+                      <span className="text-lagoon" aria-hidden>
+                        ·
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-lagoon" aria-hidden>
+                        ·
+                      </span>
+                      <span>{item}</span>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      : null;
+
   const mainBlock = (
     <>
       <div
@@ -74,9 +157,38 @@ export function FixedPackagePanel({
           {tour.title}
         </h3>
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-stone-600">
-        {tour.description}
-      </p>
+      {tour.tagline ? (
+        <p
+          className={cn(
+            "mt-2 text-sm font-semibold leading-snug text-forest/95",
+            alignTextTowardImages && cardOnLeft && "text-right",
+          )}
+        >
+          {tour.tagline}
+        </p>
+      ) : null}
+      {tour.bodyParagraphs && tour.bodyParagraphs.length > 0 ? (
+        tour.bodyParagraphs.map((para, i) => (
+          <p
+            key={i}
+            className={cn(
+              "mt-3 text-sm leading-relaxed text-stone-600",
+              alignTextTowardImages && cardOnLeft && "text-right",
+            )}
+          >
+            {para}
+          </p>
+        ))
+      ) : (
+        <p
+          className={cn(
+            "mt-3 text-sm leading-relaxed text-stone-600",
+            alignTextTowardImages && cardOnLeft && "text-right",
+          )}
+        >
+          {tour.description}
+        </p>
+      )}
       {tour.duration ? (
         <div
           className={cn(
@@ -89,35 +201,17 @@ export function FixedPackagePanel({
           </span>
         </div>
       ) : null}
-      {tour.highlights && tour.highlights.length > 0 ? (
-        <ul className="mt-4 space-y-1 text-sm text-stone-700">
-          {tour.highlights.map((h) => (
-            <li
-              key={h}
-              className={cn(
-                "flex gap-2",
-                alignTextTowardImages && cardOnLeft && "justify-end",
-              )}
-            >
-              {alignTextTowardImages && cardOnLeft ? (
-                <>
-                  <span>{h}</span>
-                  <span className="text-lagoon" aria-hidden>
-                    ·
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span className="text-lagoon" aria-hidden>
-                    ·
-                  </span>
-                  <span>{h}</span>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {tour.highlightSectionsFirst ? (
+        <>
+          {highlightSectionsBlock}
+          {highlightsBlock}
+        </>
+      ) : (
+        <>
+          {highlightsBlock}
+          {highlightSectionsBlock}
+        </>
+      )}
       {tour.note ? (
         <p className="mt-4 rounded-lg bg-amber-50/90 px-3 py-2 text-xs text-amber-900/90">
           {tour.note}
@@ -176,7 +270,11 @@ export function FixedPackagePanel({
       <Link
         href={href}
         className={rowClassName}
-        aria-label={`View itinerary: ${tour.title}`}
+        aria-label={
+          tour.kind === "specialty"
+            ? `View details: ${tour.title}`
+            : `View itinerary: ${tour.title}`
+        }
       >
         {body}
       </Link>

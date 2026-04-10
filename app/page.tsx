@@ -63,8 +63,9 @@ export default function HomePage() {
                 Specialty tours
               </h2>
               <p className="mt-2 max-w-xl text-sm text-stone-700">
-                Long stays, luxury, and drop-only transfers — layered onto your
-                rhythm.
+                Tailored for those who seek more than just a holiday — journeys
+                built around your passions, with every detail handled by
+                experts.
               </p>
             </div>
             <Link
@@ -84,6 +85,8 @@ export default function HomePage() {
                 placeholderClassName={packagesGreenPlaceholder}
                 slideshowClassName={packagesGreenSlideshow}
                 scrollRevealImages
+                verticallyCenterCardContent
+                alignTextTowardImages
               />
             ))}
           </div>

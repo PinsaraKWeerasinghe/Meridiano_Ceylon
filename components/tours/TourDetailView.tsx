@@ -1,7 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import type { TourDetailContent } from "@/data/tour-details/types";
+import { fixedPackageGalleryById } from "@/data/tour-galleries";
+import { SpecialtyDetailBlocks } from "@/components/tours/SpecialtyDetailBlocks";
 import { cn } from "@/lib/utils";
 
 function DaySection({
@@ -27,6 +30,8 @@ function DaySection({
 
 export function TourDetailView({ detail }: { detail: TourDetailContent }) {
   const heading = [detail.optionLabel, detail.pageTitle].filter(Boolean).join(" ");
+  const isSpecialty = Boolean(detail.specialtyDetail);
+  const gallerySrcs = fixedPackageGalleryById[detail.tourId] ?? [];
 
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
@@ -40,9 +45,11 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
         <h1 className="mt-6 font-serif text-3xl font-semibold text-forest sm:text-4xl">
           {heading}
         </h1>
-        <p className="mt-2 text-sm font-medium text-stone-600">
-          {detail.durationLabel}
-        </p>
+        {!isSpecialty ? (
+          <p className="mt-2 text-sm font-medium text-stone-600">
+            {detail.durationLabel}
+          </p>
+        ) : null}
         {detail.intro.map((p) => (
           <p
             key={p}
@@ -51,13 +58,13 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             {p}
           </p>
         ))}
-        {detail.theme ? (
+        {!isSpecialty && detail.theme ? (
           <p className="mt-4 text-sm leading-relaxed text-stone-700">
             <span className="font-semibold text-forest">Theme:</span>{" "}
             {detail.theme}
           </p>
         ) : null}
-        {detail.focus ? (
+        {!isSpecialty && detail.focus ? (
           <p className="mt-4 text-sm leading-relaxed text-stone-700">
             <span className="font-semibold text-forest">Focus:</span>{" "}
             {detail.focus}
@@ -70,10 +77,14 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             packagesGreenCard,
           )}
         >
-          {detail.days?.map((day) => (
+          {detail.specialtyDetail ? (
+            <SpecialtyDetailBlocks detail={detail.specialtyDetail} />
+          ) : null}
+          {!detail.specialtyDetail && detail.days?.map((day) => (
             <DaySection key={day.title} day={day} />
           ))}
-          {detail.phases?.map((phase) => (
+          {!detail.specialtyDetail &&
+            detail.phases?.map((phase) => (
             <div key={phase.title} className="space-y-8">
               <h2 className="border-b border-lagoon/20 pb-2 font-serif text-xl font-semibold text-forest">
                 {phase.title}
@@ -87,7 +98,7 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </div>
           ))}
 
-          {detail.tips && detail.tips.length > 0 ? (
+          {!detail.specialtyDetail && detail.tips && detail.tips.length > 0 ? (
             <aside className="rounded-lg border border-lagoon/25 bg-lagoon/10 px-4 py-3 text-stone-800">
               <p className="font-semibold text-forest">Tips</p>
               <ul className="mt-2 list-inside list-disc space-y-2">
@@ -98,7 +109,8 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </aside>
           ) : null}
 
-          {detail.notes?.map((n) => (
+          {!detail.specialtyDetail &&
+            detail.notes?.map((n) => (
             <aside
               key={n.title}
               className="rounded-lg border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-amber-950"
@@ -108,13 +120,15 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </aside>
           ))}
 
-          {detail.closingLine ? (
+          {!detail.specialtyDetail && detail.closingLine ? (
             <p className="border-t border-lagoon/20 pt-6 text-stone-700">
               {detail.closingLine}
             </p>
           ) : null}
 
-          {detail.highlightBullets && detail.highlightBullets.length > 0 ? (
+          {!detail.specialtyDetail &&
+            detail.highlightBullets &&
+            detail.highlightBullets.length > 0 ? (
             <div className="border-t border-lagoon/20 pt-6">
               <p className="font-semibold text-forest">
                 Tour highlights for your clients
@@ -127,7 +141,7 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </div>
           ) : null}
 
-          {detail.tenDayClientSummary ? (
+          {!detail.specialtyDetail && detail.tenDayClientSummary ? (
             <aside className="rounded-lg border border-lagoon/25 bg-white/60 px-4 py-3 text-stone-800">
               <p className="font-semibold text-forest">
                 Quick summary for your clients
@@ -147,6 +161,33 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </aside>
           ) : null}
         </Card>
+
+        {gallerySrcs.length > 0 ? (
+          <section className="mt-10" aria-labelledby="tour-detail-gallery-heading">
+            <h2
+              id="tour-detail-gallery-heading"
+              className="font-serif text-xl font-semibold text-forest"
+            >
+              Gallery
+            </h2>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {gallerySrcs.map((src) => (
+                <div
+                  key={src}
+                  className="relative aspect-[4/3] overflow-hidden rounded-xl bg-stone-200 shadow-sm ring-1 ring-black/5"
+                >
+                  <Image
+                    src={src}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );
