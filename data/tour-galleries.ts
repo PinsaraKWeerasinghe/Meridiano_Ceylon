@@ -56,18 +56,6 @@ export const fixedPackageGalleryById: Record<string, string[]> = {
     "/images/tours/7_days/opt_2/image_16.jpg",
     "/images/tours/7_days/opt_2/image_3.jpg",
   ],
-  "spec-volunteer": [
-    "/images/tours/5_days/opt_3/image_10.jpg",
-    "/images/tours/5_days/opt_3/image_11.jpg",
-  ],
-  "spec-photo": [
-    "/images/tours/16_days/opt_1/image_21.jpg",
-    "/images/tours/16_days/opt_1/image_24.jpg",
-  ],
-  "spec-beach": [
-    "/images/tours/5_days/opt_2/image_2.jpg",
-    "/images/tours/5_days/opt_2/image_24.jpg",
-  ],
   "spec-wildlife-photography": [
     "/images/tours/16_days/opt_1/image_21.jpg",
     "/images/tours/10_days/opt_4/image_14.jpg",

@@ -117,7 +117,7 @@ export const fixedPackages: TourItem[] = [
   },
 ];
 
-/** Layer onto any itinerary — village kitchen, nightlife, wellness, shopping, then volunteering, photography, beach. */
+/** Layer onto any itinerary — village kitchen, nightlife, wellness, shopping. */
 export const addonTours: TourItem[] = [
   {
     id: "spec-village-kitchen",
@@ -146,29 +146,6 @@ export const addonTours: TourItem[] = [
     title: "Shopping Tours",
     description:
       "A dedicated 4-hour stop at trusted partners for genuine gems, handloom fabrics, or high-end tea—guaranteeing quality and fair pricing.",
-  },
-  {
-    id: "spec-volunteer",
-    kind: "addon",
-    title: "Volunteer Tours",
-    description:
-      "Teaching, Ayurvedic programmes, Scouts, and other service-led experiences.",
-  },
-  {
-    id: "spec-photo",
-    kind: "addon",
-    title: "Photography Tours",
-    description:
-      "Wildlife and hidden locations with guides who understand light and access.",
-    note:
-      "DWC permits & media visas: contact us at least 30 days ahead. Drones require prior government approval.",
-  },
-  {
-    id: "spec-beach",
-    kind: "addon",
-    title: "Beach Lovers",
-    description:
-      "South Coast surfing, diving, and whale watching with qualified instructors.",
   },
 ];
 
