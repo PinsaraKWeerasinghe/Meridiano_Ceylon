@@ -106,24 +106,35 @@ export const fixedPackages: TourItem[] = [
   },
 ];
 
-/** Layer onto any itinerary — nightlife, shopping, volunteering, photography, beach. */
+/** Layer onto any itinerary — village kitchen, nightlife, wellness, shopping, then volunteering, photography, beach. */
 export const addonTours: TourItem[] = [
+  {
+    id: "spec-village-kitchen",
+    kind: "addon",
+    title: 'The "Village Kitchen" Experience',
+    description:
+      "Spend half a day in a traditional village home. Pick fresh ingredients from the garden and learn to cook authentic Sri Lankan curries over a wood-fire stove.",
+  },
   {
     id: "spec-nightlife",
     kind: "addon",
-    title: "Nightlife",
+    title: "Nightlife & City Lights",
     description:
-      "Mirissa, Hikkaduwa, Ella, and Colombo after dark — curated for energy and atmosphere.",
-    highlights: ["Coastal nights", "Hill town evenings", "Colombo scene"],
-    note: "Best on Wednesday, Friday, and Saturday.",
+      'Add a guided evening in Colombo or a coastal beach party hub. We handle the transport and the "know-how" so you can enjoy the atmosphere safely.',
+  },
+  {
+    id: "spec-wellness-top-up",
+    kind: "addon",
+    title: 'Wellness "Top-Up"',
+    description:
+      "Enhance any tour with a 2-hour professional Ayurvedic massage or a private guided meditation session at a scenic viewpoint.",
   },
   {
     id: "spec-shopping",
     kind: "addon",
     title: "Shopping Tours",
     description:
-      "Branded fashion, gems, handlooms, and Ayurvedic products with trusted partners.",
-    note: "Can be added to any tour except the 5-day fixed package.",
+      "A dedicated 4-hour stop at trusted partners for genuine gems, handloom fabrics, or high-end tea—guaranteeing quality and fair pricing.",
   },
   {
     id: "spec-volunteer",
