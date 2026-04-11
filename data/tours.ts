@@ -125,6 +125,7 @@ export const addonTours: TourItem[] = [
     title: 'The "Village Kitchen" Experience',
     description:
       "Spend half a day in a traditional village home. Pick fresh ingredients from the garden and learn to cook authentic Sri Lankan curries over a wood-fire stove.",
+    detailPath: "/packages/village-kitchen-experience",
   },
   {
     id: "spec-nightlife",
@@ -132,6 +133,7 @@ export const addonTours: TourItem[] = [
     title: "Nightlife & City Lights",
     description:
       'Add a guided evening in Colombo or a coastal beach party hub. We handle the transport and the "know-how" so you can enjoy the atmosphere safely.',
+    detailPath: "/packages/nightlife-city-lights",
   },
   {
     id: "spec-wellness-top-up",
@@ -139,6 +141,7 @@ export const addonTours: TourItem[] = [
     title: 'Wellness "Top-Up"',
     description:
       "Enhance any tour with a 2-hour professional Ayurvedic massage or a private guided meditation session at a scenic viewpoint.",
+    detailPath: "/packages/wellness-top-up",
   },
   {
     id: "spec-shopping",
@@ -146,6 +149,7 @@ export const addonTours: TourItem[] = [
     title: "Shopping Tours",
     description:
       "A dedicated 4-hour stop at trusted partners for genuine gems, handloom fabrics, or high-end tea—guaranteeing quality and fair pricing.",
+    detailPath: "/packages/curated-shopping-tours",
   },
 ];
 

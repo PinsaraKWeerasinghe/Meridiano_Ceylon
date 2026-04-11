@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import type { TourDetailContent } from "@/data/tour-details/types";
+import { allTours } from "@/data/tours";
 import { fixedPackageGalleryById } from "@/data/tour-galleries";
 import { SpecialtyDetailBlocks } from "@/components/tours/SpecialtyDetailBlocks";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,8 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
   const heading = [detail.optionLabel, detail.pageTitle].filter(Boolean).join(" ");
   const isSpecialty = Boolean(detail.specialtyDetail);
   const gallerySrcs = fixedPackageGalleryById[detail.tourId] ?? [];
+  const tourRecord = allTours.find((t) => t.id === detail.tourId);
+  const showBookNow = tourRecord?.kind !== "addon";
 
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
@@ -161,6 +164,17 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </aside>
           ) : null}
         </Card>
+
+        {showBookNow ? (
+          <div className="mt-12 flex justify-center border-t border-lagoon/20 pt-10">
+            <Link
+              href={`/packages/book?package=${encodeURIComponent(detail.slug)}`}
+              className="inline-flex min-w-[200px] items-center justify-center rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349]"
+            >
+              Book now
+            </Link>
+          </div>
+        ) : null}
 
         {gallerySrcs.length > 0 ? (
           <section className="mt-10" aria-labelledby="tour-detail-gallery-heading">

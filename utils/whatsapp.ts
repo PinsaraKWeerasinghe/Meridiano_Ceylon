@@ -119,3 +119,62 @@ export function openWhatsAppWithText(text: string): void {
   const url = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
   window.open(url, "_blank", "noopener,noreferrer");
 }
+
+export type PackageBookingPartner = {
+  name: string;
+  passport: string;
+  gender: "male" | "female";
+};
+
+export type PackageBookingPayload = {
+  primaryName: string;
+  primaryPassport: string;
+  primaryGender: "male" | "female";
+  partners: PackageBookingPartner[];
+  packageTitle: string;
+  phone: string;
+  selectedAddonTitles: string[];
+  notes: string;
+};
+
+export function buildPackageBookingWhatsAppMessage(
+  data: PackageBookingPayload,
+): string {
+  const lines: string[] = [
+    "Meridiano Ceylon — Package booking request",
+    "",
+    `Package: ${data.packageTitle}`,
+    `Phone: ${data.phone}`,
+    "",
+    "Lead traveller:",
+    `• Name: ${data.primaryName}`,
+    `• Passport: ${data.primaryPassport}`,
+    `• Gender: ${data.primaryGender === "male" ? "Male" : "Female"}`,
+  ];
+
+  if (data.partners.length > 0) {
+    lines.push("", "Travel partners:");
+    data.partners.forEach((p, i) => {
+      lines.push(
+        `${i + 1}. ${p.name} — Passport: ${p.passport} — ${p.gender === "male" ? "Male" : "Female"}`,
+      );
+    });
+  }
+
+  lines.push("", "Selected add-ons:");
+  if (data.selectedAddonTitles.length === 0) {
+    lines.push("— (none)");
+  } else {
+    data.selectedAddonTitles.forEach((t) => lines.push(`• ${t}`));
+  }
+
+  lines.push("", "Special notes:");
+  lines.push(data.notes.trim() || "—");
+
+  lines.push(
+    "",
+    "Please confirm availability and next steps. Thank you!",
+  );
+
+  return lines.join("\n");
+}

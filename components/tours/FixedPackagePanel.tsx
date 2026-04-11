@@ -271,9 +271,9 @@ export function FixedPackagePanel({
         href={href}
         className={rowClassName}
         aria-label={
-          tour.kind === "specialty"
-            ? `View details: ${tour.title}`
-            : `View itinerary: ${tour.title}`
+          tour.kind === "fixed"
+            ? `View itinerary: ${tour.title}`
+            : `View details: ${tour.title}`
         }
       >
         {body}

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { TourItem } from "@/data/tours";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
@@ -89,8 +90,8 @@ export function TourCard({
     </>
   );
 
-  if (withCover && coverImageSrc) {
-    return (
+  const cardInner =
+    withCover && coverImageSrc ? (
       <Card
         className={cn(
           "group relative flex min-h-[19rem] flex-col overflow-hidden border-white/15 p-0 shadow-xl shadow-black/30 transition hover:shadow-2xl",
@@ -104,10 +105,7 @@ export function TourCard({
           className="object-cover brightness-[0.62] contrast-[1.02] transition duration-500 group-hover:scale-105 group-hover:brightness-[0.68]"
           sizes="(max-width: 640px) 90vw, 280px"
         />
-        <div
-          className="absolute inset-0 bg-black/28"
-          aria-hidden
-        />
+        <div className="absolute inset-0 bg-black/28" aria-hidden />
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/58 to-black/32"
           aria-hidden
@@ -116,19 +114,30 @@ export function TourCard({
           {body}
         </div>
       </Card>
+    ) : (
+      <Card
+        className={cn(
+          "flex h-full flex-col transition hover:shadow-md",
+          onDark &&
+            "border-white/20 bg-black/35 text-cream shadow-lg shadow-black/30 backdrop-blur-md",
+          className,
+        )}
+      >
+        {body}
+      </Card>
+    );
+
+  if (tour.detailPath) {
+    return (
+      <Link
+        href={tour.detailPath}
+        className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lagoon/50 focus-visible:ring-offset-2"
+        aria-label={`View details: ${tour.title}`}
+      >
+        {cardInner}
+      </Link>
     );
   }
 
-  return (
-    <Card
-      className={cn(
-        "flex h-full flex-col transition hover:shadow-md",
-        onDark &&
-          "border-white/20 bg-black/35 text-cream shadow-lg shadow-black/30 backdrop-blur-md",
-        className,
-      )}
-    >
-      {body}
-    </Card>
-  );
+  return cardInner;
 }

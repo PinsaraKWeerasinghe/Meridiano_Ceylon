@@ -826,6 +826,99 @@ export const tourDetailsBySlug: Record<string, TourDetailContent> = {
       ],
     },
   },
+
+  "village-kitchen-experience": {
+    tourId: "spec-village-kitchen",
+    slug: "village-kitchen-experience",
+    pageTitle: 'The "Village Kitchen" Experience',
+    metaDescription:
+      "Half-day village cooking in Sri Lanka — garden ingredients, wood-fire curries, and authentic local hospitality.",
+    durationLabel: "Add-on",
+    intro: [
+      "Spend half a day in a traditional village home: pick fresh ingredients, cook authentic Sri Lankan curries over a wood-fire stove, and share a meal with your hosts.",
+    ],
+    specialtyDetail: {
+      tagline: "Hands-on culture you can taste",
+      bodyParagraphs: [
+        "This add-on bolts onto any core itinerary. We arrange transport to a vetted village home, introduce you to the family, and stay with you from market garden to final plate — so you learn techniques safely and respectfully.",
+      ],
+      highlights: [
+        "Seasonal ingredients straight from the garden.",
+        "Wood-fire cooking: curries, sambols, and rice the traditional way.",
+        "Small groups only — intimate, unhurried, and photo-friendly.",
+        "Dietary needs: tell us in advance (vegetarian, allergies, spice level).",
+      ],
+    },
+  },
+
+  "nightlife-city-lights": {
+    tourId: "spec-nightlife",
+    slug: "nightlife-city-lights",
+    pageTitle: "Nightlife & City Lights",
+    metaDescription:
+      "Evening add-on in Colombo or coastal hubs — safe transport, local know-how, and a great night out.",
+    durationLabel: "Add-on",
+    intro: [
+      "Add a guided evening in Colombo or a coastal beach-party strip. We handle transport and the local “know-how” so you can enjoy the atmosphere safely.",
+    ],
+    specialtyDetail: {
+      tagline: "Evenings done right",
+      bodyParagraphs: [
+        "Choose your vibe — rooftop cocktails, live music, beach clubs, or a relaxed coastal strip. We plan realistic routes, pick-up times, and backup options so you are never stranded after midnight.",
+      ],
+      highlights: [
+        "Door-to-door transport with a trusted driver for the slot you book.",
+        "Curated suggestions — we steer you clear of tourist traps.",
+        "Solo travellers & groups: we match the plan to your comfort level.",
+      ],
+    },
+  },
+
+  "wellness-top-up": {
+    tourId: "spec-wellness-top-up",
+    slug: "wellness-top-up",
+    pageTitle: 'Wellness "Top-Up"',
+    metaDescription:
+      "Ayurvedic massage or guided meditation add-on — two hours that fit around your itinerary.",
+    durationLabel: "Add-on",
+    intro: [
+      "Enhance any tour with a two-hour professional Ayurvedic massage or a private guided meditation session at a scenic viewpoint.",
+    ],
+    specialtyDetail: {
+      tagline: "Reset without losing a day",
+      bodyParagraphs: [
+        "We slot this into travel days or rest days — no need to replan your whole route. Therapists and guides are vetted; locations are chosen for calm and views.",
+      ],
+      highlights: [
+        "Ayurvedic massage: traditional oils and techniques (sessions tailored to you).",
+        "Guided meditation: sunrise or golden-hour slots where the landscape helps you unwind.",
+        "Booking window: we recommend reserving at least 48 hours ahead in peak season.",
+      ],
+    },
+  },
+
+  "curated-shopping-tours": {
+    tourId: "spec-shopping",
+    slug: "curated-shopping-tours",
+    pageTitle: "Shopping Tours",
+    metaDescription:
+      "Four-hour curated shopping — gems, handloom, tea, and trusted partners with fair pricing.",
+    durationLabel: "Add-on",
+    intro: [
+      "A dedicated half-day stop at partners we trust for genuine gems, handloom fabrics, and high-end Ceylon tea — quality and fair pricing without the hard sell.",
+    ],
+    specialtyDetail: {
+      tagline: "Buy with confidence",
+      bodyParagraphs: [
+        "We pre-brief you on typical price ranges, certification for gems, and what makes a good tea or fabric. You stay in control — we simply open the right doors.",
+      ],
+      highlights: [
+        "Roughly four hours — fits between longer drives or as a city morning.",
+        "No commission games: we earn your trust, not shop kickbacks.",
+        "Optional shipping advice for tea and fabrics.",
+      ],
+    },
+  },
 };
 
 export const tourDetailSlugs = Object.keys(tourDetailsBySlug);

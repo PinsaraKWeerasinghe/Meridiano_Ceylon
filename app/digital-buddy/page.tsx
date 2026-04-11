@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Card } from "@/components/ui/Card";
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,17 @@ export default function DigitalBuddyPage() {
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
+        <div className="mb-6 flex justify-end sm:mb-8">
+          <Image
+            src="/images/BackPackersImage/man-with-backpack-and-trekking-poles-walking-free-png.webp"
+            alt="Hiker with backpack and trekking poles — Meridiano Digital Buddy"
+            width={160}
+            height={160}
+            className="h-auto w-28 object-contain object-center sm:w-32"
+            priority
+            sizes="128px"
+          />
+        </div>
         <h1 className="font-serif text-4xl font-semibold text-forest">
           Backpacker Support &amp; Remote Guiding
         </h1>
