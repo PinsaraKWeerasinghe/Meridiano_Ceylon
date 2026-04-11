@@ -55,11 +55,13 @@ function toggleVibe(list: VibeId[], id: VibeId): VibeId[] {
   return list.includes(id) ? list.filter((v) => v !== id) : [...list, id];
 }
 
+type TravellerCount = number | "";
+
 export function BuildJourneyForm() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
+  const [adults, setAdults] = useState<TravellerCount>(1);
+  const [children, setChildren] = useState<TravellerCount>(0);
   const [travelingWithPets, setTravelingWithPets] = useState(false);
   const [tourMode, setTourMode] = useState<TourMode>("private");
   const [vibes, setVibes] = useState<VibeId[]>([]);
@@ -73,8 +75,8 @@ export function BuildJourneyForm() {
     () => ({
       startDate,
       endDate,
-      adults,
-      children,
+      adults: adults === "" ? 0 : adults,
+      children: children === "" ? 0 : children,
       travelingWithPets,
       tourMode,
       vibes,
@@ -103,10 +105,6 @@ export function BuildJourneyForm() {
     setError(null);
     if (!startDate || !endDate) {
       setError("Please choose start and end dates.");
-      return;
-    }
-    if (adults < 1) {
-      setError("At least one adult is required.");
       return;
     }
     if (!getWhatsAppNumber()) {
@@ -174,9 +172,18 @@ export function BuildJourneyForm() {
                   Adults
                   <input
                     type="number"
-                    min={1}
-                    value={adults}
-                    onChange={(e) => setAdults(Number(e.target.value) || 1)}
+                    min={0}
+                    value={adults === "" ? "" : adults}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "") {
+                        setAdults("");
+                        return;
+                      }
+                      const n = Number(v);
+                      if (Number.isNaN(n)) return;
+                      setAdults(Math.max(0, Math.floor(n)));
+                    }}
                     className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                   />
                 </label>
@@ -185,8 +192,17 @@ export function BuildJourneyForm() {
                   <input
                     type="number"
                     min={0}
-                    value={children}
-                    onChange={(e) => setChildren(Math.max(0, Number(e.target.value)))}
+                    value={children === "" ? "" : children}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "") {
+                        setChildren("");
+                        return;
+                      }
+                      const n = Number(v);
+                      if (Number.isNaN(n)) return;
+                      setChildren(Math.max(0, Math.floor(n)));
+                    }}
                     className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                   />
                 </label>
