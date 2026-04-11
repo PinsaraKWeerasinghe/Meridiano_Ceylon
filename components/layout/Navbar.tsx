@@ -89,7 +89,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
       fluid
       theme={{
         collapse: {
-          base: "w-full border-0 bg-white/40 backdrop-blur-sm md:block md:w-auto md:bg-transparent md:backdrop-blur-none",
+          base: "w-full border-0 bg-white md:block md:w-auto md:bg-transparent",
           list: "mt-4 flex flex-col md:mt-0 md:flex-row md:space-x-8 md:text-sm md:font-medium",
         },
         toggle: {
@@ -106,7 +106,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         },
       }}
       className={cn(
-        "z-50 min-h-[var(--navbar-h)] w-full border-b border-black/10 bg-white/40 px-2 py-2.5 backdrop-blur-sm sm:px-4 dark:border-white/15 dark:bg-white/40",
+        "z-50 min-h-[var(--navbar-h)] w-full border-b border-black/10 bg-white px-2 py-2.5 sm:px-4 dark:border-white/15 dark:bg-white",
       )}
     >
       <NavbarBrand as={Link} href="/" className="shrink-0 gap-2 sm:gap-3">
