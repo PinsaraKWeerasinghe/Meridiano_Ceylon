@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    /* Fixed strip height: hero `-mt` + `pt` use this; keep in sync with Navbar py + logo */
-    --navbar-h: 4.25rem;
+    /* Fixed strip height: hero top offset; keep in sync with Navbar py + logo per breakpoint */
+    --navbar-h: 2.5rem;
     --background: 40 33% 97%;
     /* Primary UI: dark navy blue; accent teal #0B7A73 */
     --foreground: 226 48% 14%;
@@ -27,6 +27,18 @@
     --input: 40 14% 88%;
     --ring: 176 83% 26%;
     --radius: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --navbar-h: 3rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --navbar-h: 3.25rem;
+    }
   }
 
   * {

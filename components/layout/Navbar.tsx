@@ -89,24 +89,24 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
       fluid
       theme={{
         collapse: {
-          base: "w-full border-0 bg-white md:block md:w-auto md:bg-transparent",
+          base: "w-full border-0 bg-[#e0ebe7] md:block md:w-auto md:bg-transparent",
           list: "mt-4 flex flex-col md:mt-0 md:flex-row md:space-x-8 md:text-sm md:font-medium",
         },
         toggle: {
-          base: "inline-flex items-center rounded-lg p-2 text-forest hover:bg-lagoon/15 hover:text-lagoon focus:outline-none focus:ring-2 focus:ring-lagoon/35 md:hidden dark:text-forest dark:hover:bg-lagoon/15 dark:hover:text-lagoon dark:focus:ring-lagoon/35",
+          base: "inline-flex items-center rounded-lg p-2 text-forest hover:bg-gold/15 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold/30 md:hidden",
           icon: "h-6 w-6 shrink-0",
           title: "sr-only",
         },
         link: {
           base: "block py-2 pl-3 pr-4 transition-colors duration-150 md:p-0",
           active: {
-            on: "bg-black/10 text-black md:bg-transparent md:font-semibold md:text-black dark:bg-black/10 dark:text-black",
-            off: "text-forest/90 hover:bg-lagoon/10 md:hover:bg-transparent md:text-forest/90 md:hover:text-lagoon dark:text-forest/90 dark:hover:bg-lagoon/10 md:dark:hover:bg-transparent md:dark:hover:text-lagoon",
+            on: "bg-gold/15 text-forest md:bg-transparent md:font-semibold md:text-gold",
+            off: "text-forest/90 hover:bg-gold/10 md:hover:bg-transparent md:hover:text-gold",
           },
         },
       }}
       className={cn(
-        "z-50 min-h-[var(--navbar-h)] w-full border-b border-black/10 bg-white px-2 py-2.5 sm:px-4 dark:border-white/15 dark:bg-white",
+        "z-50 min-h-[var(--navbar-h)] w-full border-b border-gold/20 bg-[#e0ebe7] px-2 py-1.5 text-forest sm:px-4",
       )}
     >
       <NavbarBrand as={Link} href="/" className="shrink-0 gap-2 sm:gap-3">
@@ -115,7 +115,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
           alt={LOGO_ALT}
           width={280}
           height={82}
-          className="block h-8 w-auto max-w-[min(52vw,220px)] sm:h-10 sm:max-w-[240px] md:h-12 md:max-w-[280px]"
+          className="block h-7 w-auto max-w-[min(52vw,200px)] sm:h-9 sm:max-w-[220px] md:h-10 md:max-w-[260px]"
           priority
         />
       </NavbarBrand>
