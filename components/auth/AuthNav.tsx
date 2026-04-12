@@ -32,8 +32,26 @@ export function AuthNav() {
     router.refresh();
   }
 
-  if (!ready || !isFirebaseConfigured()) {
-    return null;
+  const linkClass =
+    "rounded-lg border border-gold/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-forest transition hover:bg-gold/10 md:text-sm";
+
+  // Production: add NEXT_PUBLIC_FIREBASE_* in Vercel (all envs) so auth works.
+  // Still show Login when env is missing so the control is never hidden.
+  if (!isFirebaseConfigured()) {
+    return (
+      <Link href="/login" className={linkClass}>
+        Login
+      </Link>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <span
+        className="inline-block min-h-[2.25rem] min-w-[3.5rem] rounded-lg border border-transparent bg-transparent"
+        aria-hidden
+      />
+    );
   }
 
   if (user) {
@@ -61,10 +79,7 @@ export function AuthNav() {
   }
 
   return (
-    <Link
-      href="/login"
-      className="rounded-lg border border-gold/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-forest transition hover:bg-gold/10 md:text-sm"
-    >
+    <Link href="/login" className={linkClass}>
       Login
     </Link>
   );
