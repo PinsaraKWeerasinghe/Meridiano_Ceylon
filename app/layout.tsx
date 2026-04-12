@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { FirebaseAnalytics } from "@/components/providers/FirebaseAnalytics";
 import { FlowbiteThemeProvider } from "@/components/providers/FlowbiteThemeProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -65,6 +66,7 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${cormorant.variable} flex min-h-screen flex-col font-sans antialiased`}
       >
+        <FirebaseAnalytics />
         {maintenance ? (
           <>
             <MaintenanceBanner />

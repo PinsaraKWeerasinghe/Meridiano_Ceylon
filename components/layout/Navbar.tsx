@@ -11,6 +11,7 @@ import {
   NavbarLink,
   NavbarToggle,
 } from "flowbite-react";
+import { AuthNav } from "@/components/auth/AuthNav";
 import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
 import { cn } from "@/lib/utils";
 
@@ -120,7 +121,8 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         />
       </NavbarBrand>
 
-      <div className="flex items-center md:order-2">
+      <div className="flex items-center gap-2 md:order-2">
+        <AuthNav />
         <NavbarToggle />
       </div>
 
