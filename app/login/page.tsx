@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Log in",
+  title: "Login",
   description: "Sign in to your Meridiano Ceylon account.",
 };
 
@@ -18,7 +18,7 @@ export default function LoginPage() {
           ← Home
         </Link>
         <h1 className="mt-6 font-serif text-3xl font-semibold text-forest sm:text-4xl">
-          Log in
+          Login
         </h1>
         <p className="mt-2 text-sm text-stone-600">
           Sign in with the email and password you used to register.

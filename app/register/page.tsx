@@ -15,7 +15,7 @@ export default function RegisterPage() {
           href="/login"
           className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
         >
-          ← Log in
+          ← Login
         </Link>
         <h1 className="mt-6 font-serif text-3xl font-semibold text-forest sm:text-4xl">
           Create account

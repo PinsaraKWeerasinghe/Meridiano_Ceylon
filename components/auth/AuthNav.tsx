@@ -65,7 +65,7 @@ export function AuthNav() {
       href="/login"
       className="rounded-lg border border-gold/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-forest transition hover:bg-gold/10 md:text-sm"
     >
-      Log in
+      Login
     </Link>
   );
 }
