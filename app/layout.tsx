@@ -75,7 +75,7 @@ export default function RootLayout({
         ) : null}
         <FlowbiteThemeProvider>
           <Navbar maintenanceActive={maintenance} />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pt-[var(--navbar-h)]">{children}</main>
           <Footer />
           <DigitalBuddyFloat />
           <WhatsAppFloat />

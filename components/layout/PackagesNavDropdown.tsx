@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useNavbarContext } from "flowbite-react";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,9 +38,14 @@ type PackagesNavDropdownProps = {
 };
 
 export function PackagesNavDropdown({ pathname }: PackagesNavDropdownProps) {
+  const { setIsOpen: setNavbarOpen } = useNavbarContext();
   const searchParams = useSearchParams();
   const section = searchParams.get("section");
   const active = isPackagesSectionPath(pathname);
+
+  function closeMobileNav() {
+    setNavbarOpen(false);
+  }
 
   return (
     <DropdownMenu>
@@ -62,6 +68,7 @@ export function PackagesNavDropdown({ pathname }: PackagesNavDropdownProps) {
           <DropdownMenuItem key={item.href} asChild>
             <Link
               href={item.href}
+              onClick={closeMobileNav}
               className={cn(
                 "cursor-pointer focus:bg-gold/15 focus:text-forest",
                 isDropdownItemActive(pathname, section, item.href)
