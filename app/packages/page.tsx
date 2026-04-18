@@ -1,54 +1,65 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { PackagesSectionShell } from "@/components/packages/PackagesSectionShell";
-import { packagesSubNavItems } from "@/lib/packages-nav";
-import { cn } from "@/lib/utils";
+import { Suspense } from "react";
+import { PackagesInteractiveHub } from "@/components/packages/PackagesInteractiveHub";
+import {
+  PACKAGES_OVERVIEW_META,
+  packageSectionById,
+  parsePackagesSection,
+  type PackageSectionId,
+} from "@/lib/packages-nav";
 
-export const metadata: Metadata = {
-  title: "Packages & tours",
-  description:
-    "Browse fixed itineraries by length, add-ons, and specialty tours — Meridiano Ceylon.",
+type PageProps = {
+  searchParams: { section?: string | string[] };
 };
 
-const hubLinks = packagesSubNavItems.filter((item) => item.href !== "/packages");
+function parseInitialSection(
+  raw: string | string[] | undefined,
+): PackageSectionId | null {
+  return parsePackagesSection(raw);
+}
 
-export default function PackagesPage() {
+export async function generateMetadata({
+  searchParams,
+}: PageProps): Promise<Metadata> {
+  const section = parseInitialSection(searchParams.section);
+  if (!section) {
+    return {
+      title: PACKAGES_OVERVIEW_META.title,
+      description: PACKAGES_OVERVIEW_META.description,
+    };
+  }
+  const m = packageSectionById[section];
+  return {
+    title: m.metaTitle,
+    description: m.metaDescription,
+  };
+}
+
+function PackagesHubFallback() {
   return (
-    <PackagesSectionShell showSubnav={false}>
-      <header>
-        <h1 className="font-serif text-4xl font-semibold text-forest">
-          Packages &amp; tours
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm text-stone-700">
-          Fixed itineraries anchor your dates; add-ons and specialty experiences
-          layer on the details that matter to you. Enquire via{" "}
-          <em>Build your journey</em> or WhatsApp for a tailored quote.
-        </p>
-      </header>
-
-      <section aria-labelledby="packages-hub-heading">
-        <h2
-          id="packages-hub-heading"
-          className="font-serif text-xl font-semibold text-forest"
-        >
-          Browse by category
-        </h2>
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {hubLinks.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={cn(
-                  "flex min-h-[3.5rem] items-center rounded-xl border border-lagoon/25 bg-white/90 px-4 py-3 text-sm font-semibold text-forest shadow-sm",
-                  "transition hover:border-lagoon/40 hover:bg-lagoon/10 hover:shadow",
-                )}
-              >
-                {item.label}
-              </Link>
-            </li>
+    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-6xl animate-pulse space-y-8">
+        <div className="h-10 max-w-md rounded-lg bg-stone-200/80" />
+        <div className="h-4 max-w-2xl rounded bg-stone-200/60" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="h-14 rounded-xl border border-lagoon/10 bg-white/40"
+            />
           ))}
-        </ul>
-      </section>
-    </PackagesSectionShell>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PackagesPage({ searchParams }: PageProps) {
+  const initialSection = parseInitialSection(searchParams.section);
+
+  return (
+    <Suspense fallback={<PackagesHubFallback />}>
+      <PackagesInteractiveHub initialSection={initialSection} />
+    </Suspense>
   );
 }

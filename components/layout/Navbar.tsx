@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import {
   Navbar as FlowbiteNavbar,
   NavbarBrand,
@@ -134,7 +134,15 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         >
           {navLinks[0].label}
         </NavbarLink>
-        <PackagesNavDropdown pathname={pathname} />
+        <Suspense
+          fallback={
+            <span className="block py-2 pl-3 pr-4 text-forest/90 md:inline-block md:p-0">
+              Packages
+            </span>
+          }
+        >
+          <PackagesNavDropdown pathname={pathname} />
+        </Suspense>
         {navLinks.slice(1).map((l) => (
           <NavbarLink
             key={l.href}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AddonMarqueeStrip } from "@/components/home/AddonMarqueeStrip";
 import { addonTours } from "@/data/tours";
+import { packagesSectionHref } from "@/lib/packages-nav";
 
 export function HomeAddonsSection() {
   return (
@@ -17,7 +18,7 @@ export function HomeAddonsSection() {
             </p>
           </div>
           <Link
-            href="/packages/add-ons"
+            href={packagesSectionHref("add-ons")}
             className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
           >
             View all add-ons

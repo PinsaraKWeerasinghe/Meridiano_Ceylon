@@ -7,6 +7,7 @@ import {
   fixedPackagesFirstPerDuration,
   homeSpecialtyTours,
 } from "@/data/tours";
+import { packagesSectionHref } from "@/lib/packages-nav";
 import {
   packagesGreenCard,
   packagesGreenPlaceholder,
@@ -72,7 +73,7 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/packages/specialty-tours"
+              href={packagesSectionHref("specialty-tours")}
               className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
             >
               Explore specialties

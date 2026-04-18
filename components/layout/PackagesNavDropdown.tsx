@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
@@ -10,15 +11,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   isPackagesSectionPath,
-  packagesSubNavItems,
+  packagesNavDropdownItems,
 } from "@/lib/packages-nav";
 import { cn } from "@/lib/utils";
+
+function isDropdownItemActive(
+  pathname: string,
+  section: string | null,
+  itemHref: string,
+): boolean {
+  if (itemHref === "/packages") {
+    return pathname === "/packages" && !section;
+  }
+  try {
+    const u = new URL(itemHref, "http://local");
+    if (u.pathname !== "/packages") return false;
+    return section === u.searchParams.get("section");
+  } catch {
+    return false;
+  }
+}
 
 type PackagesNavDropdownProps = {
   pathname: string;
 };
 
 export function PackagesNavDropdown({ pathname }: PackagesNavDropdownProps) {
+  const searchParams = useSearchParams();
+  const section = searchParams.get("section");
   const active = isPackagesSectionPath(pathname);
 
   return (
@@ -38,15 +58,13 @@ export function PackagesNavDropdown({ pathname }: PackagesNavDropdownProps) {
         align="start"
         className="z-[60] min-w-[14rem] border-gold/20 bg-[#e0ebe7] text-forest shadow-lg"
       >
-        {packagesSubNavItems.map((item) => (
+        {packagesNavDropdownItems.map((item) => (
           <DropdownMenuItem key={item.href} asChild>
             <Link
               href={item.href}
               className={cn(
                 "cursor-pointer focus:bg-gold/15 focus:text-forest",
-                pathname === item.href ||
-                  (item.href !== "/packages" &&
-                    pathname.startsWith(item.href))
+                isDropdownItemActive(pathname, section, item.href)
                   ? "font-semibold text-gold"
                   : "",
               )}
