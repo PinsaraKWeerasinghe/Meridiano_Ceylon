@@ -15,4 +15,5 @@ export const heroSlides = [
   { src: "/images/hero/13.jpg", alt: "Sri Lanka travel" },
   { src: "/images/hero/14.jpg", alt: "Sri Lanka travel" },
   { src: "/images/hero/15.jpg", alt: "Sri Lanka travel" },
+  { src: "/images/hero/16.jpg", alt: "Sri Lanka travel" },
 ] as const;
