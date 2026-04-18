@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:package-galleries": "node scripts/sync-fixed-package-galleries.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

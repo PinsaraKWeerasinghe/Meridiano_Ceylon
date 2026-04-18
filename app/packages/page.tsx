@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
-import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
-import { addonTours, fixedPackages, specialtyTours } from "@/data/tours";
-import {
-  packagesGreenCard,
-  packagesGreenPlaceholder,
-  packagesGreenSlideshow,
-} from "@/lib/packages-section-theme";
+import Link from "next/link";
+import { PackagesSectionShell } from "@/components/packages/PackagesSectionShell";
+import { packagesSubNavItems } from "@/lib/packages-nav";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Packages & tours",
+  description:
+    "Browse fixed itineraries by length, add-ons, and specialty tours — Meridiano Ceylon.",
 };
+
+const hubLinks = packagesSubNavItems.filter((item) => item.href !== "/packages");
 
 export default function PackagesPage() {
   return (
-    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-6xl">
+    <PackagesSectionShell showSubnav={false}>
+      <header>
         <h1 className="font-serif text-4xl font-semibold text-forest">
           Packages &amp; tours
         </h1>
@@ -23,76 +24,31 @@ export default function PackagesPage() {
           layer on the details that matter to you. Enquire via{" "}
           <em>Build your journey</em> or WhatsApp for a tailored quote.
         </p>
+      </header>
 
-        <h2 className="mt-14 font-serif text-2xl font-semibold text-forest">
-          Fixed packages
-        </h2>
-        <div className="mt-8 flex flex-col gap-14">
-          {fixedPackages.map((tour, index) => (
-            <FixedPackagePanel
-              key={tour.id}
-              tour={tour}
-              index={index}
-              cardClassName={packagesGreenCard}
-              placeholderClassName={packagesGreenPlaceholder}
-              slideshowClassName={packagesGreenSlideshow}
-              verticallyCenterCardContent
-              alignTextTowardImages
-            />
-          ))}
-        </div>
-
+      <section aria-labelledby="packages-hub-heading">
         <h2
-          id="addons"
-          className="mt-16 scroll-mt-24 font-serif text-2xl font-semibold text-forest"
+          id="packages-hub-heading"
+          className="font-serif text-xl font-semibold text-forest"
         >
-          Add-ons
+          Browse by category
         </h2>
-        <p className="mt-3 max-w-2xl text-sm text-stone-700">
-          Optional layers — nightlife, retail, beach sports, volunteering, and
-          photography — designed to bolt onto your core itinerary.
-        </p>
-        <div className="mt-8 flex flex-col gap-14">
-          {addonTours.map((tour, index) => (
-            <FixedPackagePanel
-              key={tour.id}
-              tour={tour}
-              index={index}
-              cardClassName={packagesGreenCard}
-              placeholderClassName={packagesGreenPlaceholder}
-              slideshowClassName={packagesGreenSlideshow}
-              verticallyCenterCardContent
-              alignTextTowardImages
-            />
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {hubLinks.map((item) => (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex min-h-[3.5rem] items-center rounded-xl border border-lagoon/25 bg-white/90 px-4 py-3 text-sm font-semibold text-forest shadow-sm",
+                  "transition hover:border-lagoon/40 hover:bg-lagoon/10 hover:shadow",
+                )}
+              >
+                {item.label}
+              </Link>
+            </li>
           ))}
-        </div>
-
-        <h2
-          id="specialty"
-          className="mt-16 scroll-mt-24 font-serif text-2xl font-semibold text-forest"
-        >
-          Specialty tours
-        </h2>
-        <p className="mt-3 max-w-2xl text-sm text-stone-700">
-          Tailored for those who seek more than just a holiday. These specialized
-          journeys are designed around your specific passions, ensuring every
-          moment is purposeful and every detail is handled by experts.
-        </p>
-        <div className="mt-8 flex flex-col gap-14">
-          {specialtyTours.map((tour, index) => (
-            <FixedPackagePanel
-              key={tour.id}
-              tour={tour}
-              index={index}
-              cardClassName={packagesGreenCard}
-              placeholderClassName={packagesGreenPlaceholder}
-              slideshowClassName={packagesGreenSlideshow}
-              verticallyCenterCardContent
-              alignTextTowardImages
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+        </ul>
+      </section>
+    </PackagesSectionShell>
   );
 }

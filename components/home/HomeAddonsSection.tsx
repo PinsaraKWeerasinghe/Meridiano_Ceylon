@@ -17,7 +17,7 @@ export function HomeAddonsSection() {
             </p>
           </div>
           <Link
-            href="/packages#addons"
+            href="/packages/add-ons"
             className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
           >
             View all add-ons

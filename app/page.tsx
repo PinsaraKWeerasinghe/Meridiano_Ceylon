@@ -3,7 +3,10 @@ import { Hero } from "@/components/home/Hero";
 import { BuildJourneyForm } from "@/components/home/BuildJourneyForm";
 import { HomeAddonsSection } from "@/components/home/HomeAddonsSection";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
-import { fixedPackagesFirstPerDuration, specialtyTours } from "@/data/tours";
+import {
+  fixedPackagesFirstPerDuration,
+  homeSpecialtyTours,
+} from "@/data/tours";
 import {
   packagesGreenCard,
   packagesGreenPlaceholder,
@@ -69,14 +72,14 @@ export default function HomePage() {
               </p>
             </div>
             <Link
-              href="/packages#specialty"
+              href="/packages/specialty-tours"
               className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
             >
               Explore specialties
             </Link>
           </div>
           <div className="mt-10 flex flex-col gap-14">
-            {specialtyTours.map((tour, index) => (
+            {homeSpecialtyTours.map((tour, index) => (
               <FixedPackagePanel
                 key={tour.id}
                 tour={tour}

@@ -16,7 +16,7 @@ export default function DigitalBuddyPage() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex justify-end sm:mb-8">
           <Image
-            src="/images/BackPackersImage/man-with-backpack-and-trekking-poles-walking-free-png.webp"
+            src="/BackPackersImage/man-with-backpack-and-trekking-poles-walking-free-png.webp"
             alt="Hiker with backpack and trekking poles — Meridiano Digital Buddy"
             width={160}
             height={160}

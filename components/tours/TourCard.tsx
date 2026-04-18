@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { TourItem } from "@/data/tours";
 import { Card } from "@/components/ui/Card";
+import { TourGallerySlideshow } from "@/components/tours/TourGallerySlideshow";
+import { packageGalleryJpegOnly } from "@/lib/package-gallery-images";
 import { cn } from "@/lib/utils";
 
 interface TourCardProps {
@@ -9,18 +13,22 @@ interface TourCardProps {
   className?: string;
   /** White text on glass / dark sections (e.g. home add-ons marquee). */
   variant?: "default" | "onDark";
-  /** Fills the card behind text (gradient overlay for readability). */
-  coverImageSrc?: string;
+  /** Cover images — one static image, or several cross-fading in sequence. */
+  coverImageSrcs?: readonly string[];
 }
+
+const cardCoverImageTone =
+  "brightness-[0.62] contrast-[1.02] transition duration-500 group-hover:scale-105 group-hover:brightness-[0.68]";
 
 export function TourCard({
   tour,
   className,
   variant = "default",
-  coverImageSrc,
+  coverImageSrcs = [],
 }: TourCardProps) {
   const onDark = variant === "onDark";
-  const withCover = Boolean(coverImageSrc);
+  const srcs = packageGalleryJpegOnly(coverImageSrcs.filter(Boolean));
+  const withCover = srcs.length > 0;
   const lightText = onDark || withCover;
 
   const body = (
@@ -91,20 +99,31 @@ export function TourCard({
   );
 
   const cardInner =
-    withCover && coverImageSrc ? (
+    withCover && srcs.length > 0 ? (
       <Card
         className={cn(
           "group relative flex min-h-[19rem] flex-col overflow-hidden border-white/15 p-0 shadow-xl shadow-black/30 transition hover:shadow-2xl",
           className,
         )}
       >
-        <Image
-          src={coverImageSrc}
-          alt=""
-          fill
-          className="object-cover brightness-[0.62] contrast-[1.02] transition duration-500 group-hover:scale-105 group-hover:brightness-[0.68]"
-          sizes="(max-width: 640px) 90vw, 280px"
-        />
+        {srcs.length === 1 ? (
+          <Image
+            src={srcs[0]}
+            alt=""
+            fill
+            className={cn("object-cover", cardCoverImageTone)}
+            sizes="(max-width: 640px) 90vw, 280px"
+          />
+        ) : (
+          <div className="absolute inset-0 min-h-[19rem] overflow-hidden">
+            <TourGallerySlideshow
+              srcs={srcs}
+              fit="fill"
+              intervalMs={3800}
+              imageClassName={cardCoverImageTone}
+            />
+          </div>
+        )}
         <div className="absolute inset-0 bg-black/28" aria-hidden />
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/88 via-black/58 to-black/32"

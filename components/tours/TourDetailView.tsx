@@ -5,6 +5,7 @@ import { packagesGreenCard } from "@/lib/packages-section-theme";
 import type { TourDetailContent } from "@/data/tour-details/types";
 import { allTours } from "@/data/tours";
 import { fixedPackageGalleryById } from "@/data/tour-galleries";
+import { packageGalleryJpegOnly } from "@/lib/package-gallery-images";
 import { SpecialtyDetailBlocks } from "@/components/tours/SpecialtyDetailBlocks";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,9 @@ function DaySection({
 export function TourDetailView({ detail }: { detail: TourDetailContent }) {
   const heading = [detail.optionLabel, detail.pageTitle].filter(Boolean).join(" ");
   const isSpecialty = Boolean(detail.specialtyDetail);
-  const gallerySrcs = fixedPackageGalleryById[detail.tourId] ?? [];
+  const gallerySrcs = packageGalleryJpegOnly(
+    fixedPackageGalleryById[detail.tourId] ?? [],
+  );
   const tourRecord = allTours.find((t) => t.id === detail.tourId);
   const showBookNow = tourRecord?.kind !== "addon";
 
@@ -194,6 +197,7 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
                     src={src}
                     alt=""
                     fill
+                    loading="lazy"
                     className="object-cover"
                     sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 400px"
                   />

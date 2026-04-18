@@ -59,7 +59,7 @@ export function AddonMarqueeStrip({
               tour={tour}
               variant={cardVariant}
               className={cardClassName}
-              coverImageSrc={fixedPackageGalleryById[tour.id]?.[0]}
+              coverImageSrcs={fixedPackageGalleryById[tour.id] ?? []}
             />
           </div>
         ))}
@@ -103,7 +103,7 @@ export function AddonMarqueeStrip({
                 tour={tour}
                 variant={cardVariant}
                 className={cn("h-full", cardClassName)}
-                coverImageSrc={fixedPackageGalleryById[tour.id]?.[0]}
+                coverImageSrcs={fixedPackageGalleryById[tour.id] ?? []}
               />
             </div>
           )),

@@ -4,9 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** `public/images/BackPackersImage/...` → served at `/images/BackPackersImage/...` */
+/** `public/BackPackersImage/...` → `/BackPackersImage/...` */
 export const BACKPACKER_BUTTON_IMAGE =
-  "/images/BackPackersImage/traveler-backpacker-girl-with-suitcase-running-happily-3d-icon-png-download-14043606.webp";
+  "/BackPackersImage/traveler-backpacker-girl-with-suitcase-running-happily-3d-icon-png-download-14043606.webp";
 
 /** Entry to Backpacker Support — Meridiano Digital Buddy (bottom-left). */
 export function DigitalBuddyFloat() {

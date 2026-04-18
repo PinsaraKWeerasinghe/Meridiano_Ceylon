@@ -22,6 +22,8 @@ type FixedPackagePanelProps = {
   verticallyCenterCardContent?: boolean;
   /** When the text card sits on the left, align copy to the right (toward images); when on the right, align left. */
   alignTextTowardImages?: boolean;
+  /** Limit slideshow to the first N images (e.g. `/packages` listing preview). Detail pages use the full gallery. */
+  previewMaxImages?: number;
 };
 
 export function FixedPackagePanel({
@@ -33,8 +35,13 @@ export function FixedPackagePanel({
   scrollRevealImages = false,
   verticallyCenterCardContent = false,
   alignTextTowardImages = false,
+  previewMaxImages,
 }: FixedPackagePanelProps) {
-  const srcs = fixedPackageGalleryById[tour.id] ?? [];
+  const allSrcs = fixedPackageGalleryById[tour.id] ?? [];
+  const srcs =
+    previewMaxImages != null && previewMaxImages > 0
+      ? allSrcs.slice(0, previewMaxImages)
+      : allSrcs;
   const href = tour.detailPath;
   /** Even index: card column is on the left; odd: card on the right. */
   const cardOnLeft = index % 2 === 0;

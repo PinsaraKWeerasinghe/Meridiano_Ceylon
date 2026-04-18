@@ -44,6 +44,15 @@ export const fixedPackages: TourItem[] = [
     detailPath: "/packages/hill-country-beach-express",
   },
   {
+    id: "fixed-5-opt3",
+    kind: "fixed",
+    title: "The Cultural & Highland Express",
+    duration: "7 days",
+    description:
+      "Village life, Ancient History, and the Beautiful Hill Country.",
+    detailPath: "/packages/cultural-highland-express",
+  },
+  {
     id: "fixed-7-opt1",
     kind: "fixed",
     title: "Nature & Safari Adventure",
@@ -60,15 +69,6 @@ export const fixedPackages: TourItem[] = [
     description:
       'A relaxing journey focused on the ocean, coastal culture, and the "Big Game" of the wild.',
     detailPath: "/packages/beach-wildlife-dream",
-  },
-  {
-    id: "fixed-5-opt3",
-    kind: "fixed",
-    title: "The Cultural & Highland Express",
-    duration: "7 days",
-    description:
-      "Village life, Ancient History, and the Beautiful Hill Country.",
-    detailPath: "/packages/cultural-highland-express",
   },
   {
     id: "fixed-10-opt1",
@@ -116,6 +116,19 @@ export const fixedPackages: TourItem[] = [
     detailPath: "/packages/north-south-expedition",
   },
 ];
+
+export const fixedPackages5Day = fixedPackages.filter(
+  (t) => t.duration === "5 days",
+);
+export const fixedPackages7Day = fixedPackages.filter(
+  (t) => t.duration === "7 days",
+);
+export const fixedPackages10Day = fixedPackages.filter(
+  (t) => t.duration === "10 days",
+);
+export const fixedPackages16Day = fixedPackages.filter(
+  (t) => t.duration === "16 days",
+);
 
 /** Layer onto any itinerary — village kitchen, nightlife, wellness, shopping. */
 export const addonTours: TourItem[] = [
@@ -195,6 +208,11 @@ export const specialtyTours: TourItem[] = [
     detailPath: "/packages/adventure-adrenaline-tour",
   },
 ];
+
+/** Home page specialty section: Wildlife Photography tour only. */
+export const homeSpecialtyTours = specialtyTours.filter(
+  (t) => t.id === "spec-wildlife-photography",
+);
 
 export const allTours: TourItem[] = [
   ...fixedPackages,

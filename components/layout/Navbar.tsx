@@ -12,12 +12,12 @@ import {
   NavbarToggle,
 } from "flowbite-react";
 import { AuthNav } from "@/components/auth/AuthNav";
+import { PackagesNavDropdown } from "@/components/layout/PackagesNavDropdown";
 import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/packages", label: "Packages" },
   { href: "/reviews", label: "Reviews" },
   { href: "/about", label: "About" },
   { href: "/care", label: "Care Promise" },
@@ -127,7 +127,15 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
       </div>
 
       <NavbarCollapse className="md:order-1">
-        {navLinks.map((l) => (
+        <NavbarLink
+          as={Link}
+          href={navLinks[0].href}
+          active={pathActive(pathname, navLinks[0].href)}
+        >
+          {navLinks[0].label}
+        </NavbarLink>
+        <PackagesNavDropdown pathname={pathname} />
+        {navLinks.slice(1).map((l) => (
           <NavbarLink
             key={l.href}
             as={Link}
