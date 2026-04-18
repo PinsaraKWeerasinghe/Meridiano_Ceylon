@@ -8,7 +8,13 @@ import {
   motion,
   useReducedMotion,
 } from "framer-motion";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
 import {
   addonTours,
@@ -78,6 +84,46 @@ function toursForSection(id: PackageSectionId): TourItem[] {
   }
 }
 
+/** Start offset between each of the non-selected chips (they may overlap). */
+const STAGGER_BETWEEN_CHIPS_SEC = 0.1;
+
+/**
+ * Selected chip starts at 0. Others follow in hub order (5d → 7d → …) with a small
+ * stagger — they can overlap the selected chip; no need to wait for it to finish.
+ */
+function chipLayoutDelaySec(
+  categoryId: PackageSectionId,
+  selectedId: PackageSectionId,
+): number {
+  if (categoryId === selectedId) return 0;
+  const ordered = packageSectionDefinitions.map((d) => d.id);
+  const others = ordered.filter((id) => id !== selectedId);
+  const idx = others.indexOf(categoryId);
+  if (idx < 0) return 0;
+  return STAGGER_BETWEEN_CHIPS_SEC * (idx + 1);
+}
+
+/** Time until all category chips finish layout (parallel, or staggered starts). */
+function chipLayoutSequenceTotalSec(
+  leadDurationSec: number,
+  useStagger: boolean,
+): number {
+  if (!useStagger) return leadDurationSec;
+  const othersCount = packageSectionDefinitions.length - 1;
+  const maxStartDelay = STAGGER_BETWEEN_CHIPS_SEC * othersCount;
+  return maxStartDelay + leadDurationSec;
+}
+
+/** Overview entrance: drop from above with spring bounce (stagger per chip). */
+const OVERVIEW_DROP_STAGGER_SEC = 0.09;
+const overviewDropSpring = {
+  type: "spring" as const,
+  /** Slower / heavier feel to align with ~1s hub motion (still light bounce). */
+  stiffness: 165,
+  damping: 15,
+  mass: 1.05,
+};
+
 /** Same rounded-xl card shape for overview grid and section subnav grid. */
 function categoryNavLinkClass({
   hasSection,
@@ -124,11 +170,68 @@ export function PackagesInteractiveHub({
     ? { duration: 0 }
     : { duration: hubMotionDurationS, ease: [0.22, 1, 0.36, 1] as const };
 
+  /** True after a category link click — staggers chips; false on first paint / overview. */
+  const [staggerCategoryLayout, setStaggerCategoryLayout] = useState(false);
+
+  /** Bumps when returning to overview so chip entrance replays. */
+  const [overviewEntranceReplay, setOverviewEntranceReplay] = useState(0);
+  const prevHasSectionRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (!hasSection) setStaggerCategoryLayout(false);
+  }, [hasSection]);
+
+  useEffect(() => {
+    if (prevHasSectionRef.current === true && hasSection === false) {
+      setOverviewEntranceReplay((n) => n + 1);
+    }
+    prevHasSectionRef.current = hasSection;
+  }, [hasSection]);
+
+  const staggerChipMotion =
+    staggerCategoryLayout && hasSection && !reduceMotion && section != null;
+
+  const packageDetailsEntranceDelaySec = useMemo(() => {
+    if (!hasSection || reduceMotion) return 0;
+    return chipLayoutSequenceTotalSec(hubMotionDurationS, staggerChipMotion);
+  }, [hasSection, reduceMotion, staggerChipMotion, hubMotionDurationS]);
+
+  /** Exit runs first (`mode="wait"`); shift enter delay so we still align with chip motion end. */
+  const sectionPanelExitDurationSec = hubMotionDurationS * 0.72;
+  const packageDetailsAnimateDelaySec = useMemo(() => {
+    if (!hasSection || reduceMotion) return 0;
+    return Math.max(
+      0,
+      packageDetailsEntranceDelaySec - sectionPanelExitDurationSec,
+    );
+  }, [
+    hasSection,
+    reduceMotion,
+    packageDetailsEntranceDelaySec,
+    sectionPanelExitDurationSec,
+  ]);
+
+  useEffect(() => {
+    if (!staggerCategoryLayout || !hasSection || reduceMotion) return;
+    const ms =
+      Math.ceil(
+        chipLayoutSequenceTotalSec(hubMotionDurationS, true) * 1000,
+      ) + 200;
+    const id = window.setTimeout(() => setStaggerCategoryLayout(false), ms);
+    return () => window.clearTimeout(id);
+  }, [section, staggerCategoryLayout, hasSection, reduceMotion, hubMotionDurationS]);
+
   const meta = section ? packageSectionById[section] : null;
   const tours = section ? toursForSection(section) : [];
 
   const sectionPanelSlideDir = useSectionPanelSlideDirection(section);
-  const slidePx = 48;
+  /** Horizontal slide distance for section ↔ section (enter vs exit are opposite). */
+  const slidePx = 64;
+  const panelEase = [0.22, 1, 0.36, 1] as const;
+  /**
+   * dir: forward in hub order → new panel enters from the right; old exits left.
+   * Backward → new enters from left; old exits right. (Opposite directions.)
+   */
   const sectionPanelVariants = {
     initial: (dir: 1 | -1 | 0) => {
       if (reduceMotion) return {};
@@ -136,13 +239,34 @@ export function PackagesInteractiveHub({
       return { opacity: 0, x: dir * slidePx };
     },
     animate: (_dir: 1 | -1 | 0) => {
-      if (reduceMotion) return {};
-      return { opacity: 1, x: 0, y: 0 };
+      if (reduceMotion) {
+        return {
+          opacity: 1,
+          x: 0,
+          y: 0,
+          transition: { duration: 0 },
+        };
+      }
+      return {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        transition: {
+          duration: hubMotionDurationS,
+          ease: panelEase,
+          delay: packageDetailsAnimateDelaySec,
+        },
+      };
     },
     exit: (dir: 1 | -1 | 0) => {
       if (reduceMotion) return {};
-      if (dir === 0) return { opacity: 0, y: 8 };
-      return { opacity: 0, x: -dir * slidePx };
+      const t = {
+        duration: sectionPanelExitDurationSec,
+        ease: panelEase,
+      };
+      if (dir === 0) return { opacity: 0, y: 8, transition: t };
+      /* Leave toward -dir so outgoing side matches opposite of incoming (+dir). */
+      return { opacity: 0, x: -dir * slidePx, transition: t };
     },
   };
 
@@ -172,24 +296,55 @@ export function PackagesInteractiveHub({
           </header>
 
           {/*
-            Plain div (no parent layout): chips animate only. Section mode uses a
-            responsive grid so all six buttons stay in the viewport — no horizontal scroll.
+            Overview: chips drop from above (spring bounce, staggered). Section: full
+            layout morph to compact grid; no horizontal scroll.
           */}
           <div
             className={cn(
               !hasSection
-                ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                ? "grid gap-4 overflow-hidden sm:grid-cols-2 lg:grid-cols-3"
                 : "grid w-full grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6 lg:gap-3",
             )}
           >
-            {packageSectionDefinitions.map((d) => {
+            {packageSectionDefinitions.map((d, index) => {
               const active = section === d.id;
+              const chipTransition = reduceMotion
+                ? transition
+                : {
+                    ...transition,
+                    delay:
+                      staggerChipMotion && section
+                        ? chipLayoutDelaySec(d.id, section)
+                        : 0,
+                  };
+              const showOverviewDrop = !hasSection && !reduceMotion;
               return (
                 <motion.div
-                  key={d.id}
+                  key={
+                    hasSection
+                      ? d.id
+                      : `${d.id}-ov-${overviewEntranceReplay}`
+                  }
                   layoutId={`pkg-cat-${d.id}`}
-                  layout={reduceMotion ? false : "position"}
-                  transition={transition}
+                  layout={hasSection && !reduceMotion}
+                  initial={
+                    showOverviewDrop
+                      ? { opacity: 0, y: "-70vh" }
+                      : false
+                  }
+                  animate={
+                    showOverviewDrop
+                      ? {
+                          opacity: 1,
+                          y: 0,
+                          transition: {
+                            ...overviewDropSpring,
+                            delay: index * OVERVIEW_DROP_STAGGER_SEC,
+                          },
+                        }
+                      : undefined
+                  }
+                  transition={hasSection ? chipTransition : undefined}
                   whileTap={
                     reduceMotion
                       ? undefined
@@ -203,6 +358,7 @@ export function PackagesInteractiveHub({
                   <Link
                     href={packagesSectionHref(d.id)}
                     scroll={false}
+                    onClick={() => setStaggerCategoryLayout(true)}
                     className={categoryNavLinkClass({
                       hasSection,
                       active,
@@ -216,7 +372,11 @@ export function PackagesInteractiveHub({
           </div>
 
           <div className="overflow-x-hidden">
-            <AnimatePresence mode="sync" initial={false}>
+            <AnimatePresence
+              mode="wait"
+              initial={false}
+              custom={sectionPanelSlideDir}
+            >
               {hasSection && meta ? (
                 <motion.div
                   key={section}
@@ -227,7 +387,6 @@ export function PackagesInteractiveHub({
                   initial="initial"
                   animate="animate"
                   exit="exit"
-                  transition={transition}
                   className="space-y-10"
                 >
                 <header>

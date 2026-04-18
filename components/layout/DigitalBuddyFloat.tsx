@@ -14,7 +14,7 @@ export function DigitalBuddyFloat() {
   if (pathname === "/digital-buddy") return null;
 
   return (
-    <div className="group fixed bottom-6 left-4 z-50 sm:bottom-8 sm:left-6">
+    <div className="group fixed bottom-6 left-4 z-40 md:z-50 sm:bottom-8 sm:left-6">
       <Link
         href="/digital-buddy"
         aria-label="Meridiano Digital Buddy — backpacker support"
