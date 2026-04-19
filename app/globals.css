@@ -6,6 +6,8 @@
   :root {
     /* Fixed strip height: hero top offset; keep in sync with Navbar py + logo per breakpoint */
     --navbar-h: 2.5rem;
+    /* Home morph strip (px set client-side on /); fallback ≈ mobile stripStartH */
+    --home-morph-strip-h: 12.5rem;
     --background: 40 33% 97%;
     /* Primary UI: dark navy blue; accent teal #0B7A73 */
     --foreground: 226 48% 14%;

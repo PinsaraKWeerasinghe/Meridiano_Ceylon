@@ -100,10 +100,27 @@ export function HomeMorphNav({ maintenanceActive = false }: HomeMorphNavProps) {
   const { stripStartH, startW, startH, endW, endH } = useMorphSizes(vw);
   const edgePad = vw >= 640 ? 16 : 10;
 
-  if (pathname !== "/") return null;
-
+  const isHome = pathname === "/";
   const tStrip = easeInOutCubic(progressRaw);
-  const stripH = Math.round(lerp(stripStartH, navH, tStrip));
+  const stripH = isHome
+    ? Math.round(lerp(stripStartH, navH, tStrip))
+    : navH;
+
+  useLayoutEffect(() => {
+    if (!isHome) {
+      document.documentElement.style.removeProperty("--home-morph-strip-h");
+      return;
+    }
+    document.documentElement.style.setProperty(
+      "--home-morph-strip-h",
+      `${stripH}px`,
+    );
+    return () => {
+      document.documentElement.style.removeProperty("--home-morph-strip-h");
+    };
+  }, [isHome, stripH]);
+
+  if (!isHome) return null;
 
   const u = Math.min(1, progressRaw / HOME_VIRTUAL_LOGO_CORNER_END_PROGRESS);
   const uEase = easeInOutCubic(u);

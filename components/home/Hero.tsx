@@ -4,35 +4,43 @@ import { HeroSlideshow } from "@/components/home/HeroSlideshow";
 
 export function Hero() {
   return (
-    <section className="relative min-h-[100svh] min-h-[100dvh] w-full overflow-hidden bg-forest text-cream">
-      <div className="absolute inset-0">
-        <HeroSlideshow slides={heroSlides} intervalMs={6500} />
-        <div
-          className="absolute inset-0 z-[2] bg-gradient-to-b from-black/45 via-black/38 to-black/50"
-          aria-hidden
-        />
-      </div>
-      <div className="absolute inset-0 z-10 mx-auto flex max-w-3xl flex-col justify-center px-4 pb-16 pt-8 text-center sm:px-6 sm:pb-24 sm:pt-12">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-goldMint">
-          Luxury Sri Lanka Tours
-        </p>
-        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-stone-300">
-          Tailor-made journeys across hill country, safari, coast, and culture
-          — crafted with local expertise and uncompromising care.
-        </p>
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a
-            href="#build-your-journey"
-            className="inline-flex min-w-[200px] items-center justify-center rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349]"
-          >
-            Build your journey
-          </a>
-          <Link
-            href="/packages"
-            className="inline-flex min-w-[200px] items-center justify-center rounded-full border border-stone-400/60 px-8 py-3 text-sm font-semibold text-cream transition hover:border-cream hover:bg-white/5"
-          >
-            View packages
-          </Link>
+    <section className="relative flex min-h-[calc(100svh-var(--maintenance-strip-h,0px))] min-h-[calc(100dvh-var(--maintenance-strip-h,0px))] w-full flex-col overflow-hidden bg-forest text-cream">
+      {/* In-flow height matches fixed HomeMorphNav strip so strip + slideshow = one viewport */}
+      <div
+        className="w-full shrink-0"
+        style={{ height: "var(--home-morph-strip-h)" }}
+        aria-hidden
+      />
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="absolute inset-0">
+          <HeroSlideshow slides={heroSlides} intervalMs={6500} />
+          <div
+            className="absolute inset-0 z-[2] bg-gradient-to-b from-black/45 via-black/38 to-black/50"
+            aria-hidden
+          />
+        </div>
+        <div className="absolute inset-0 z-10 mx-auto flex max-w-3xl flex-col justify-center px-4 pb-16 pt-8 text-center sm:px-6 sm:pb-24 sm:pt-12">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-goldMint">
+            Luxury Sri Lanka Tours
+          </p>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-stone-300">
+            Tailor-made journeys across hill country, safari, coast, and culture
+            — crafted with local expertise and uncompromising care.
+          </p>
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href="#build-your-journey"
+              className="inline-flex min-w-[200px] items-center justify-center rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349]"
+            >
+              Build your journey
+            </a>
+            <Link
+              href="/packages"
+              className="inline-flex min-w-[200px] items-center justify-center rounded-full border border-stone-400/60 px-8 py-3 text-sm font-semibold text-cream transition hover:border-cream hover:bg-white/5"
+            >
+              View packages
+            </Link>
+          </div>
         </div>
       </div>
     </section>
