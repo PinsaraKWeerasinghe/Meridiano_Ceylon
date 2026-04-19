@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
-import { cn } from "@/lib/utils";
 
 const PROFILE_ROUTE = "/profile";
 /** Wire when the page exists (`null` = disabled). */
@@ -33,30 +32,11 @@ export function AuthNav() {
     router.refresh();
   }
 
-  const linkClass =
-    "rounded-lg border border-gold/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-forest transition hover:bg-gold/10 md:text-sm";
-
   const avatarNavClass =
     "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/35 bg-white/90 text-forest shadow-sm outline-none ring-offset-2 transition hover:border-gold/50 focus-visible:ring-2 focus-visible:ring-gold/40";
 
   if (!isFirebaseConfigured()) {
-    return (
-      <>
-        <Link
-          href="/login"
-          className={cn(avatarNavClass, "md:hidden")}
-          aria-label="Login"
-        >
-          <UserAvatar photoURL={null} />
-        </Link>
-        <Link
-          href="/login"
-          className={cn(linkClass, "hidden md:inline-flex")}
-        >
-          Login
-        </Link>
-      </>
-    );
+    return <LoggedOutLoginTrigger avatarNavClass={avatarNavClass} />;
   }
 
   if (!ready) {
@@ -121,19 +101,14 @@ export function AuthNav() {
     );
   }
 
+  return <LoggedOutLoginTrigger avatarNavClass={avatarNavClass} />;
+}
+
+function LoggedOutLoginTrigger({ avatarNavClass }: { avatarNavClass: string }) {
   return (
-    <>
-      <Link
-        href="/login"
-        className={cn(avatarNavClass, "md:hidden")}
-        aria-label="Login"
-      >
-        <UserAvatar photoURL={null} />
-      </Link>
-      <Link href="/login" className={cn(linkClass, "hidden md:inline-flex")}>
-        Login
-      </Link>
-    </>
+    <Link href="/login" className={avatarNavClass} aria-label="Login">
+      <UserAvatar photoURL={null} />
+    </Link>
   );
 }
 
