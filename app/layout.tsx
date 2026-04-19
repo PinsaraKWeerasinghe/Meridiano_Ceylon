@@ -4,8 +4,11 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { FirebaseAnalytics } from "@/components/providers/FirebaseAnalytics";
 import { FlowbiteThemeProvider } from "@/components/providers/FlowbiteThemeProvider";
+import { ClientMain } from "@/components/layout/ClientMain";
+import { HomeScrollProvider } from "@/components/layout/HomeScrollContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { HomeMorphNav } from "@/components/home/HomeMorphNav";
 import { DigitalBuddyFloat } from "@/components/layout/DigitalBuddyFloat";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
 import {
@@ -74,11 +77,14 @@ export default function RootLayout({
           </>
         ) : null}
         <FlowbiteThemeProvider>
-          <Navbar maintenanceActive={maintenance} />
-          <main className="flex-1 pt-[var(--navbar-h)]">{children}</main>
-          <Footer />
+          <HomeScrollProvider>
+            <Navbar maintenanceActive={maintenance} />
+            <HomeMorphNav maintenanceActive={maintenance} />
+            <ClientMain>{children}</ClientMain>
+            <Footer />
           <DigitalBuddyFloat />
           <WhatsAppFloat />
+          </HomeScrollProvider>
         </FlowbiteThemeProvider>
       </body>
     </html>
