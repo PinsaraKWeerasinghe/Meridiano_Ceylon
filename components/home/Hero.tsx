@@ -16,10 +16,6 @@ export function Hero() {
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-goldMint">
           Luxury Sri Lanka Tours
         </p>
-        <h1 className="mt-4 font-serif text-4xl font-semibold leading-tight sm:text-5xl">
-          Your island,{" "}
-          <span className="text-goldMint">your rhythm</span>
-        </h1>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-stone-300">
           Tailor-made journeys across hill country, safari, coast, and culture
           — crafted with local expertise and uncompromising care.
