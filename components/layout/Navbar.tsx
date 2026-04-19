@@ -101,6 +101,11 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    setScrollHidden(false);
+  }, [pathname]);
+
+  /* Hide when scrolling down the page; show again when scrolling up or near the top. Applies on all routes (including home). */
+  useEffect(() => {
     if (prefersReducedMotion) return;
 
     const onScroll = () => {
@@ -120,7 +125,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
     lastScrollY.current = window.scrollY || 0;
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, pathname]);
 
   const hideOnScroll = !prefersReducedMotion && scrollHidden;
 
@@ -142,86 +147,85 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         } as CSSProperties
       }
     >
-    <FlowbiteNavbar
-      fluid
-      theme={{
-        collapse: {
-          base: "w-full border-0 bg-[#e0ebe7] md:block md:w-auto md:bg-transparent",
-          list: "mt-4 flex min-h-0 flex-1 flex-col md:mt-0 md:flex-none md:flex-row md:space-x-8 md:text-sm md:font-medium",
-          /* Let AppNavbarCollapse control visibility with translate (Flowbite `hidden` breaks slide animation). */
-          hidden: { on: "", off: "" },
-        },
-        toggle: {
-          base: "inline-flex items-center rounded-lg p-2 text-forest hover:bg-gold/15 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold/30 md:hidden",
-          icon: "h-6 w-6 shrink-0",
-          title: "sr-only",
-        },
-        link: {
-          base: "block py-2 pl-3 pr-4 transition-colors duration-150 md:p-0",
-          active: {
-            on: "bg-gold/15 text-forest md:bg-transparent md:font-semibold md:text-gold",
-            off: "text-forest/90 hover:bg-gold/10 md:hover:bg-transparent md:hover:text-gold",
+      <FlowbiteNavbar
+        fluid
+        theme={{
+          collapse: {
+            base: "w-full border-0 bg-[#e0ebe7] md:block md:w-auto md:bg-transparent",
+            list: "mt-4 flex min-h-0 flex-1 flex-col md:mt-0 md:flex-none md:flex-row md:space-x-8 md:text-sm md:font-medium",
+            hidden: { on: "", off: "" },
           },
-        },
-      }}
-      className={cn(
-        "z-50 min-h-[var(--navbar-h)] w-full border-b border-gold/20 bg-[#e0ebe7] px-2 py-1.5 text-forest sm:px-4",
-      )}
-    >
-      <NavbarBrand
-        as={Link}
-        href="/"
-        className="relative z-[50] shrink-0 gap-2 sm:gap-3"
+          toggle: {
+            base: "inline-flex items-center rounded-lg p-2 text-forest hover:bg-gold/15 hover:text-gold focus:outline-none focus:ring-2 focus:ring-gold/30 md:hidden",
+            icon: "h-6 w-6 shrink-0",
+            title: "sr-only",
+          },
+          link: {
+            base: "block py-2 pl-3 pr-4 transition-colors duration-150 md:p-0",
+            active: {
+              on: "bg-gold/15 text-forest md:bg-transparent md:font-semibold md:text-gold",
+              off: "text-forest/90 hover:bg-gold/10 md:hover:bg-transparent md:hover:text-gold",
+            },
+          },
+        }}
+        className={cn(
+          "z-50 min-h-[var(--navbar-h)] w-full border-b border-gold/20 bg-[#e0ebe7] px-2 py-1.5 text-forest sm:px-4",
+        )}
       >
-        <Image
-          src={LOGO_SRC}
-          alt={LOGO_ALT}
-          width={280}
-          height={82}
-          className="block h-7 w-auto max-w-[min(52vw,200px)] sm:h-9 sm:max-w-[220px] md:h-10 md:max-w-[260px]"
-          priority
-        />
-      </NavbarBrand>
-
-      <div className="relative z-[50] flex items-center gap-2 md:order-2">
-        <AuthNav />
-        <NavbarToggle />
-      </div>
-
-      <MobileNavBackdrop />
-
-      <AppNavbarCollapse>
-        <NavbarLink
+        <NavbarBrand
           as={Link}
-          href={navLinks[0].href}
-          active={pathActive(pathname, navLinks[0].href)}
+          href="/"
+          className="relative z-[50] shrink-0 gap-2 sm:gap-3"
         >
-          {navLinks[0].label}
-        </NavbarLink>
-        <Suspense
-          fallback={
-            <span className="block py-2 pl-3 pr-4 text-forest/90 md:inline-block md:p-0">
-              Packages
-            </span>
-          }
-        >
-          <PackagesNavDropdown pathname={pathname} />
-        </Suspense>
-        {navLinks.slice(1).map((l) => (
+          <Image
+            src={LOGO_SRC}
+            alt={LOGO_ALT}
+            width={280}
+            height={82}
+            className="block h-7 w-auto max-w-[min(52vw,200px)] sm:h-9 sm:max-w-[220px] md:h-10 md:max-w-[260px]"
+            priority
+          />
+        </NavbarBrand>
+
+        <div className="relative z-[50] flex items-center gap-2 md:order-2">
+          <AuthNav />
+          <NavbarToggle />
+        </div>
+
+        <MobileNavBackdrop />
+
+        <AppNavbarCollapse>
           <NavbarLink
-            key={l.href}
             as={Link}
-            href={l.href}
-            active={pathActive(pathname, l.href)}
+            href={navLinks[0].href}
+            active={pathActive(pathname, navLinks[0].href)}
           >
-            {l.label}
+            {navLinks[0].label}
           </NavbarLink>
-        ))}
-        <li className="mt-auto list-none border-t border-gold/25 pt-4 pl-3 md:mt-4 md:hidden">
-          <AuthMobileNavSignOut />
-        </li>
-      </AppNavbarCollapse>
-    </FlowbiteNavbar>
+          <Suspense
+            fallback={
+              <span className="block py-2 pl-3 pr-4 text-forest/90 md:inline-block md:p-0">
+                Packages
+              </span>
+            }
+          >
+            <PackagesNavDropdown pathname={pathname} />
+          </Suspense>
+          {navLinks.slice(1).map((l) => (
+            <NavbarLink
+              key={l.href}
+              as={Link}
+              href={l.href}
+              active={pathActive(pathname, l.href)}
+            >
+              {l.label}
+            </NavbarLink>
+          ))}
+          <li className="mt-auto list-none border-t border-gold/25 pt-4 pl-3 md:mt-4 md:hidden">
+            <AuthMobileNavSignOut />
+          </li>
+        </AppNavbarCollapse>
+      </FlowbiteNavbar>
     </div>
   );
 }
