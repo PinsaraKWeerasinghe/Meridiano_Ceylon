@@ -19,6 +19,13 @@ export function formatAuthError(code: string | undefined): string {
       return "Too many attempts. Please try again later.";
     case "auth/network-request-failed":
       return "Network error. Check your connection.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+      return "Sign-in was cancelled.";
+    case "auth/account-exists-with-different-credential":
+      return "An account already exists with this email using a different sign-in method.";
+    case "auth/popup-blocked":
+      return "Pop-up was blocked. Allow pop-ups for this site and try again.";
     default:
       return "Something went wrong. Please try again.";
   }

@@ -6,7 +6,7 @@ import { useNavbarContext } from "flowbite-react";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { useAuthUser } from "@/components/auth/useAuthUser";
 
-/** Compact dark Sign out at the bottom of the mobile nav sheet (md:hidden). */
+/** Sign out at the bottom of the mobile nav sheet (md:hidden). Desktop uses AuthNav dropdown. */
 export function AuthMobileNavSignOut() {
   const router = useRouter();
   const { setIsOpen: setNavbarOpen } = useNavbarContext();

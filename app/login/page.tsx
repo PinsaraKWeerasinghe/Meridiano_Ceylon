@@ -21,7 +21,7 @@ export default function LoginPage() {
           Login
         </h1>
         <p className="mt-2 text-sm text-stone-600">
-          Sign in with the email and password you used to register.
+          Sign in with Google or the email and password you used to register.
         </p>
         <div className="mt-8">
           <LoginForm />
