@@ -42,13 +42,13 @@ type NavbarProps = {
   maintenanceActive?: boolean;
 };
 
-/** Dims page behind the drawer; sits below the slide panel. */
+/** Invisible tap target to close the drawer (no dimmed overlay). */
 function MobileNavBackdrop() {
   const { isOpen, setIsOpen } = useNavbarContext();
   return (
     <div
       className={cn(
-        "md:hidden fixed inset-x-0 bottom-0 z-[30] bg-forest/35 backdrop-blur-[2px] transition-opacity duration-300 ease-out motion-reduce:transition-none",
+        "md:hidden fixed inset-x-0 bottom-0 z-[30] bg-transparent transition-opacity duration-300 ease-out motion-reduce:transition-none",
         "top-[var(--nav-mobile-menu-top)]",
         isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
       )}
