@@ -19,7 +19,6 @@ import {
   NavbarToggle,
   useNavbarContext,
 } from "flowbite-react";
-import { AuthMobileNavSignOut } from "@/components/auth/AuthMobileNavSignOut";
 import { AuthNav } from "@/components/auth/AuthNav";
 import { PackagesNavDropdown } from "@/components/layout/PackagesNavDropdown";
 import { useHomeMorphProgress } from "@/components/layout/HomeScrollContext";
@@ -247,9 +246,6 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
               {l.label}
             </NavbarLink>
           ))}
-          <li className="mt-auto list-none border-t border-gold/25 pt-4 pl-3 md:mt-4 md:hidden">
-            <AuthMobileNavSignOut />
-          </li>
         </AppNavbarCollapse>
       </FlowbiteNavbar>
     </div>

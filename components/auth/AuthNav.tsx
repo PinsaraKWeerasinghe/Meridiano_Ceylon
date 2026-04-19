@@ -10,9 +10,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
+import { cn } from "@/lib/utils";
 
 const PROFILE_ROUTE = "/profile";
 /** Wire when the page exists (`null` = disabled). */
@@ -34,11 +36,26 @@ export function AuthNav() {
   const linkClass =
     "rounded-lg border border-gold/30 bg-white/80 px-3 py-1.5 text-xs font-semibold text-forest transition hover:bg-gold/10 md:text-sm";
 
+  const avatarNavClass =
+    "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/35 bg-white/90 text-forest shadow-sm outline-none ring-offset-2 transition hover:border-gold/50 focus-visible:ring-2 focus-visible:ring-gold/40";
+
   if (!isFirebaseConfigured()) {
     return (
-      <Link href="/login" className={linkClass}>
-        Login
-      </Link>
+      <>
+        <Link
+          href="/login"
+          className={cn(avatarNavClass, "md:hidden")}
+          aria-label="Login"
+        >
+          <UserAvatar photoURL={null} />
+        </Link>
+        <Link
+          href="/login"
+          className={cn(linkClass, "hidden md:inline-flex")}
+        >
+          Login
+        </Link>
+      </>
     );
   }
 
@@ -59,7 +76,7 @@ export function AuthNav() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/35 bg-white/90 text-forest shadow-sm outline-none ring-offset-2 transition hover:border-gold/50 focus-visible:ring-2 focus-visible:ring-gold/40"
+            className={avatarNavClass}
             aria-label="Account menu"
           >
             <UserAvatar photoURL={user.photoURL} />
@@ -75,7 +92,7 @@ export function AuthNav() {
               {greeting}
             </p>
           </div>
-          <div className="border-b border-gold/15 p-1">
+          <div className="p-1">
             <PlaceholderNavItem
               href={PROFILE_ROUTE}
               label="Profile"
@@ -87,7 +104,8 @@ export function AuthNav() {
               onNavigate={() => setNavbarOpen(false)}
             />
           </div>
-          <div className="hidden p-1 md:block">
+          <DropdownMenuSeparator className="bg-gold/15" />
+          <div className="p-1">
             <DropdownMenuItem
               className="cursor-pointer rounded-lg font-semibold text-forest focus:bg-gold/15 focus:text-forest"
               onSelect={(e) => {
@@ -104,9 +122,18 @@ export function AuthNav() {
   }
 
   return (
-    <Link href="/login" className={linkClass}>
-      Login
-    </Link>
+    <>
+      <Link
+        href="/login"
+        className={cn(avatarNavClass, "md:hidden")}
+        aria-label="Login"
+      >
+        <UserAvatar photoURL={null} />
+      </Link>
+      <Link href="/login" className={cn(linkClass, "hidden md:inline-flex")}>
+        Login
+      </Link>
+    </>
   );
 }
 
