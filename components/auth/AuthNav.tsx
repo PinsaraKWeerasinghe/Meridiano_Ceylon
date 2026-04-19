@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
+import { signOut, type User } from "firebase/auth";
 import { useNavbarContext } from "flowbite-react";
 import { UserRound } from "lucide-react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
@@ -13,6 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
+
+const PROFILE_ROUTE = "/profile";
+/** Wire when the page exists (`null` = disabled). */
+const TRIP_HISTORY_ROUTE = null as string | null;
 
 export function AuthNav() {
   const router = useRouter();
@@ -48,7 +52,7 @@ export function AuthNav() {
   }
 
   if (user) {
-    const displayLabel = user.displayName?.trim() || "Your account";
+    const greeting = `Hi ${firstNameForGreeting(user)}!`;
 
     return (
       <DropdownMenu modal={false}>
@@ -68,15 +72,20 @@ export function AuthNav() {
         >
           <div className="border-b border-gold/15 px-3 py-3">
             <p className="truncate text-sm font-semibold text-forest">
-              {displayLabel}
+              {greeting}
             </p>
-            {user.email ? (
-              <p className="mt-1.5 break-all text-xs leading-snug text-stone-600">
-                {user.email}
-              </p>
-            ) : (
-              <p className="mt-1.5 text-xs text-stone-500">No email on file</p>
-            )}
+          </div>
+          <div className="border-b border-gold/15 p-1">
+            <PlaceholderNavItem
+              href={PROFILE_ROUTE}
+              label="Profile"
+              onNavigate={() => setNavbarOpen(false)}
+            />
+            <PlaceholderNavItem
+              href={TRIP_HISTORY_ROUTE}
+              label="Trip History"
+              onNavigate={() => setNavbarOpen(false)}
+            />
           </div>
           <div className="hidden p-1 md:block">
             <DropdownMenuItem
@@ -99,6 +108,56 @@ export function AuthNav() {
       Login
     </Link>
   );
+}
+
+function PlaceholderNavItem({
+  href,
+  label,
+  onNavigate,
+}: {
+  href: string | null;
+  label: string;
+  onNavigate?: () => void;
+}) {
+  if (href) {
+    return (
+      <DropdownMenuItem
+        className="cursor-pointer rounded-lg text-forest focus:bg-gold/15 focus:text-forest"
+        asChild
+      >
+        <Link href={href} onClick={onNavigate}>
+          {label}
+        </Link>
+      </DropdownMenuItem>
+    );
+  }
+
+  return (
+    <DropdownMenuItem
+      disabled
+      className="rounded-lg text-forest data-[disabled]:pointer-events-none data-[disabled]:opacity-55"
+    >
+      {label}
+    </DropdownMenuItem>
+  );
+}
+
+/** First token of displayName, else a reasonable guess from email local part, else “there”. */
+function firstNameForGreeting(user: User): string {
+  const name = user.displayName?.trim();
+  if (name) {
+    const first = name.split(/\s+/)[0];
+    if (first) return first;
+  }
+  const email = user.email?.trim();
+  if (email) {
+    const local = email.split("@")[0] ?? "";
+    const segment = local.split(/[._-]/)[0] ?? local;
+    if (segment) {
+      return segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase();
+    }
+  }
+  return "there";
 }
 
 const avatarClass = "h-full w-full object-cover";

@@ -26,6 +26,10 @@ export function formatAuthError(code: string | undefined): string {
       return "An account already exists with this email using a different sign-in method.";
     case "auth/popup-blocked":
       return "Pop-up was blocked. Allow pop-ups for this site and try again.";
+    case "permission-denied":
+      return "Permission denied. Check Firebase security rules for Firestore or Storage.";
+    case "auth/requires-recent-login":
+      return "For security, sign out, sign in again, then try once more.";
     default:
       return "Something went wrong. Please try again.";
   }
