@@ -21,12 +21,7 @@ import {
 } from "flowbite-react";
 import { AuthNav } from "@/components/auth/AuthNav";
 import { PackagesNavDropdown } from "@/components/layout/PackagesNavDropdown";
-import { useHomeMorphProgress } from "@/components/layout/HomeScrollContext";
 import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
-import {
-  HOME_NAVBAR_FADE_START_PROGRESS,
-  HOME_VIRTUAL_LAYER_FADE_START_PROGRESS,
-} from "@/lib/home-nav-morph";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -100,23 +95,9 @@ function usePrefersReducedMotion() {
 
 export function Navbar({ maintenanceActive = false }: NavbarProps) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
-  const morphProgress = useHomeMorphProgress();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [scrollHidden, setScrollHidden] = useState(false);
   const lastScrollY = useRef(0);
-
-  const navFade =
-    !isHome
-      ? 1
-      : morphProgress < HOME_NAVBAR_FADE_START_PROGRESS
-        ? 0
-        : (morphProgress - HOME_NAVBAR_FADE_START_PROGRESS) /
-          (1 - HOME_NAVBAR_FADE_START_PROGRESS);
-
-  const showNavbarLogo =
-    !isHome ||
-    morphProgress >= HOME_VIRTUAL_LAYER_FADE_START_PROGRESS;
 
   useEffect(() => {
     setScrollHidden(false);
@@ -143,9 +124,9 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
     lastScrollY.current = window.scrollY || 0;
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [prefersReducedMotion, isHome, pathname]);
+  }, [prefersReducedMotion, pathname]);
 
-  const hideOnScroll = !isHome && !prefersReducedMotion && scrollHidden;
+  const hideOnScroll = !prefersReducedMotion && scrollHidden;
 
   return (
     <div
@@ -162,8 +143,6 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
           "--nav-mobile-menu-top": maintenanceActive
             ? "calc(var(--maintenance-strip-h, 4.75rem) + var(--navbar-h))"
             : "var(--navbar-h)",
-          opacity: navFade,
-          pointerEvents: navFade < 0.02 ? "none" : "auto",
         } as CSSProperties
       }
     >
@@ -195,12 +174,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         <NavbarBrand
           as={Link}
           href="/"
-          className={cn(
-            "relative z-[50] shrink-0 gap-2 sm:gap-3 transition-opacity duration-200 motion-reduce:transition-none",
-            isHome && !showNavbarLogo && "pointer-events-none opacity-0",
-          )}
-          aria-hidden={isHome && !showNavbarLogo ? true : undefined}
-          tabIndex={isHome && !showNavbarLogo ? -1 : undefined}
+          className="relative z-[50] shrink-0 gap-2 sm:gap-3"
         >
           <Image
             src={LOGO_SRC}
