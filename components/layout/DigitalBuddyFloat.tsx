@@ -20,7 +20,7 @@ export function DigitalBuddyFloat() {
   if (!showBackpackerCorner(pathname)) return null;
 
   return (
-    <div className="fixed bottom-6 left-4 z-40 md:z-50 sm:bottom-8 sm:left-6">
+    <div className="fixed bottom-6 left-4 z-40 w-max md:z-50 sm:bottom-8 sm:left-6">
       <Link
         href="/digital-buddy"
         aria-label="Meridiano Digital Buddy — backpacker support"
@@ -36,9 +36,9 @@ export function DigitalBuddyFloat() {
         />
       </Link>
       <p
-        className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 max-w-[min(18rem,calc(100vw-2rem))] rounded-lg border border-white/15 bg-gold px-3 py-2 text-left text-xs font-medium leading-snug text-cream shadow-md ring-1 ring-black/10"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-white/15 bg-gold px-3 py-2 text-center text-xs font-medium leading-snug text-cream shadow-md ring-1 ring-black/10"
       >
-        Welcome to Backpackers corner..
+        Backpackers corner..
       </p>
     </div>
   );
