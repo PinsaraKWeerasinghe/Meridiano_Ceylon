@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { FreePlanningWhatsAppButton } from "@/components/digital-buddy/FreePlanningWhatsAppButton";
 import { Card } from "@/components/ui/Card";
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import { cn } from "@/lib/utils";
@@ -207,6 +208,8 @@ export default function DigitalBuddyPage() {
             </ol>
           </section>
         </Card>
+
+        <FreePlanningWhatsAppButton />
       </div>
     </div>
   );

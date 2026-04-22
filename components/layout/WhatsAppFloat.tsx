@@ -1,22 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { getWhatsAppNumber } from "@/utils/whatsapp";
+import { getWhatsAppNumber, MERIDIANO_INQUIRY_MAILTO } from "@/utils/whatsapp";
 
 const WHATSAPP_LOGO = "/SiteInfo/whatsapp-logo.png";
 
 const defaultPrefill =
   "Hi Meridiano Ceylon — I'd like to plan a luxury tour. Can you help?";
 
-const FALLBACK_MAILTO =
-  "mailto:info@meridianoceylon.com?subject=" +
-  encodeURIComponent("Meridiano Ceylon — inquiry");
-
 export function WhatsAppFloat() {
   const num = getWhatsAppNumber();
   const href = num
     ? `https://wa.me/${num}?text=${encodeURIComponent(defaultPrefill)}`
-    : FALLBACK_MAILTO;
+    : MERIDIANO_INQUIRY_MAILTO;
   const isWhatsApp = Boolean(num);
 
   return (

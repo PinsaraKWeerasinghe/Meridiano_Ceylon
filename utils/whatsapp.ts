@@ -108,6 +108,14 @@ export function buildJourneyWhatsAppMessage(data: JourneyFormPayload): string {
   return lines.join("\n");
 }
 
+/** Short prefill for Digital Buddy “Free planning” (not the Build your journey form). */
+export const WHATSAPP_TEXT_BACKPACKER_HELP =
+  "Hi, can you help me to come as a backpacker?";
+
+export const MERIDIANO_INQUIRY_MAILTO =
+  "mailto:info@meridianoceylon.com?subject=" +
+  encodeURIComponent("Meridiano Ceylon — inquiry");
+
 export function getWhatsAppNumber(): string {
   const raw = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
   return raw.replace(/\D/g, "");
