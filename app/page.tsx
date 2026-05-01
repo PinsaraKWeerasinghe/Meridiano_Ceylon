@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Hero } from "@/components/home/Hero";
 import { BuildJourneyForm } from "@/components/home/BuildJourneyForm";
 import { HomeAddonsSection } from "@/components/home/HomeAddonsSection";
+import { TrustPilotReviewsSection } from "@/components/home/TrustPilotReviewsSection";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
 import {
   fixedPackagesFirstPerDuration,
@@ -96,6 +97,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <TrustPilotReviewsSection />
     </>
   );
 }
