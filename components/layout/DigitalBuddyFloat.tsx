@@ -24,7 +24,7 @@ export function DigitalBuddyFloat() {
       <Link
         href="/digital-buddy"
         aria-label="Meridiano Digital Buddy — backpacker support"
-        className="relative flex h-14 w-14 shrink-0 animate-float-soft items-center justify-center overflow-hidden rounded-full bg-gold p-1 shadow-[0_10px_28px_-4px_rgba(15,23,42,0.22),0_8px_24px_-4px_rgba(36,104,92,0.35)] transition-colors transition-shadow motion-reduce:animate-none hover:bg-[#1d5349] hover:shadow-[0_14px_36px_-6px_rgba(15,23,42,0.26),0_10px_28px_-4px_rgba(36,104,92,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream sm:h-16 sm:w-16 sm:p-1.5"
+        className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold p-1 shadow-[0_10px_28px_-4px_rgba(15,23,42,0.22),0_8px_24px_-4px_rgba(36,104,92,0.35)] transition-colors transition-shadow hover:bg-[#1d5349] hover:shadow-[0_14px_36px_-6px_rgba(15,23,42,0.26),0_10px_28px_-4px_rgba(36,104,92,0.35)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cream sm:h-16 sm:w-16 sm:p-1.5"
       >
         <Image
           src={BACKPACKER_BUTTON_IMAGE}

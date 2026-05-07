@@ -2,6 +2,8 @@
 
 import Script from "next/script";
 import { useCallback, useEffect, useRef } from "react";
+import { ReviewPanelLogo } from "@/components/home/ReviewPanelLogo";
+import { homeReviewPanelClass } from "@/lib/home-review-panels";
 
 declare global {
   interface Window {
@@ -16,6 +18,12 @@ const BOOTSTRAP =
 
 /** Default: TrustBox Carousel — override with `NEXT_PUBLIC_TRUSTPILOT_TEMPLATE_ID` if your embed uses another template. */
 const DEFAULT_TEMPLATE_ID = "54ad501d-baf0-4835-afd4-067b32f7f831";
+
+const TRUSTPILOT_LOGO_SRC = "/SiteInfo/Trustpilot_Logo.svg.png";
+
+function TrustpilotLogoTop() {
+  return <ReviewPanelLogo src={TRUSTPILOT_LOGO_SRC} unoptimized />;
+}
 
 export function TrustPilotTrustBox() {
   const widgetRef = useRef<HTMLDivElement>(null);
@@ -46,9 +54,11 @@ export function TrustPilotTrustBox() {
 
   if (!configured) {
     return (
-      <div className="rounded-lg border border-lagoon/20 bg-white/80 px-6 py-10 shadow-sm sm:px-10">
-        <div className="mx-auto grid max-w-lg gap-8 sm:grid-cols-2 sm:gap-10">
-          <div className="text-center sm:text-left">
+      <div className={homeReviewPanelClass}>
+        <TrustpilotLogoTop />
+
+        <div className="mx-auto grid max-w-lg justify-items-center gap-8 text-center sm:grid-cols-2 sm:gap-10">
+          <div>
             <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
               Trustpilot rating
             </p>
@@ -56,7 +66,7 @@ export function TrustPilotTrustBox() {
               N/A
             </p>
           </div>
-          <div className="text-center sm:text-left">
+          <div>
             <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
               Reviews
             </p>
@@ -75,28 +85,32 @@ export function TrustPilotTrustBox() {
   const fallbackHref = reviewPageUrl || "https://www.trustpilot.com";
 
   return (
-    <>
+    <div className="min-w-0">
       <Script src={BOOTSTRAP} strategy="lazyOnload" onLoad={loadWidget} />
 
-      <div
-        ref={widgetRef}
-        className="trustpilot-widget w-full [&_.tp-widget-wrapper]:rounded-lg"
-        data-locale={locale}
-        data-template-id={templateId}
-        data-businessunit-id={businessUnitId}
-        data-theme={theme}
-        data-style-height={styleHeight}
-        data-style-width={styleWidth}
-      >
-        <a
-          href={fallbackHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-stone-600 underline-offset-4 hover:text-lagoon hover:underline"
+      <div className={homeReviewPanelClass}>
+        <TrustpilotLogoTop />
+
+        <div
+          ref={widgetRef}
+          className="trustpilot-widget w-full [&_.tp-widget-wrapper]:rounded-lg"
+          data-locale={locale}
+          data-template-id={templateId}
+          data-businessunit-id={businessUnitId}
+          data-theme={theme}
+          data-style-height={styleHeight}
+          data-style-width={styleWidth}
         >
-          Trustpilot
-        </a>
+          <a
+            href={fallbackHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-stone-600 underline-offset-4 hover:text-lagoon hover:underline"
+          >
+            Trustpilot
+          </a>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
