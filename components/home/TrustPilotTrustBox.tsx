@@ -60,7 +60,7 @@ export function TrustPilotTrustBox() {
         <div className="mx-auto grid max-w-lg justify-items-center gap-8 text-center sm:grid-cols-2 sm:gap-10">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-              Trustpilot rating
+              Rating
             </p>
             <p className="mt-2 font-serif text-3xl font-semibold tracking-tight text-forest tabular-nums">
               N/A
@@ -76,7 +76,7 @@ export function TrustPilotTrustBox() {
           </div>
         </div>
         <p className="mt-8 text-center text-xs text-stone-500">
-          Live Trustpilot reviews will appear here once connected.
+          Trustpilot will be connected soon.
         </p>
       </div>
     );
