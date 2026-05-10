@@ -7,6 +7,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Card } from "@/components/ui/Card";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { formatAuthError } from "@/lib/firebase/auth-errors";
+import {
+  ensureUserTravelerDefaults,
+  seedNewRegisteredUser,
+} from "@/lib/user-profile";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -41,11 +45,12 @@ export function RegisterForm() {
     }
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(
+      const cred = await createUserWithEmailAndPassword(
         getFirebaseAuth(),
         email.trim(),
         password,
       );
+      await seedNewRegisteredUser(cred.user.uid, cred.user.email);
       router.push("/");
       router.refresh();
     } catch (err: unknown) {

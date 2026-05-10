@@ -21,9 +21,10 @@ import { getFirebaseAuth, getFirebaseStorage, isFirebaseConfigured } from "@/lib
 import { formatAuthError } from "@/lib/firebase/auth-errors";
 import {
   deleteUserProfileDoc,
+  ensureUserTravelerDefaults,
   fetchUserProfile,
   saveUserProfile,
-  type UserProfileDoc,
+  type UserProfileFields,
 } from "@/lib/user-profile";
 
 function splitDisplayName(displayName: string | null): {
@@ -58,14 +59,18 @@ export function ProfileForm() {
   const loadFromUser = useCallback(async (u: User) => {
     setEmail(u.email ?? "");
     const fromName = splitDisplayName(u.displayName);
-    let next: UserProfileDoc = {
+    let next: UserProfileFields = {
       firstName: fromName.firstName,
       lastName: fromName.lastName,
       age: null,
       passportId: "",
     };
     try {
-      const stored = await fetchUserProfile(u.uid);
+      let stored = await fetchUserProfile(u.uid);
+      if (!stored) {
+        await ensureUserTravelerDefaults(u.uid, u.email ?? null);
+        stored = await fetchUserProfile(u.uid);
+      }
       if (stored) {
         next = {
           firstName: stored.firstName || fromName.firstName,
@@ -196,7 +201,7 @@ export function ProfileForm() {
       ageNum = n;
     }
 
-    const profile: UserProfileDoc = {
+    const profile: UserProfileFields = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       age: ageNum,
@@ -209,7 +214,7 @@ export function ProfileForm() {
       .trim();
 
     try {
-      await saveUserProfile(u.uid, profile);
+      await saveUserProfile(u.uid, profile, trimmedEmail);
 
       if (photoFile) {
         const storageRef = ref(

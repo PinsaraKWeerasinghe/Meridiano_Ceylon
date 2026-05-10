@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function callerUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && callerUserDoc().data.get('role', '') == 'admin';
+    }
+
+    function validRole(r) {
+      return r == 'admin' || r == 'traveler' || r == 'driver';
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        isAdmin()
+      );
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.role == 'traveler';
+
+      allow update: if request.auth != null && (
+        (
+          request.auth.uid == userId
+          && request.resource.data.get('role', resource.data.get('role', 'traveler'))
+            == resource.data.get('role', 'traveler')
+        )
+        ||
+        (
+          isAdmin()
+          && validRole(request.resource.data.role)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt'])
+        )
+      );
+    }
+  }
+}

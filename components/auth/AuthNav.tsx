@@ -6,6 +6,7 @@ import { signOut, type User } from "firebase/auth";
 import { useNavbarContext } from "flowbite-react";
 import { UserRound } from "lucide-react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
+import { useUserRole } from "@/components/auth/useUserRole";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,12 +17,14 @@ import {
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 
 const PROFILE_ROUTE = "/profile";
+const ADMIN_USERS_ROUTE = "/admin/users";
 /** Wire when the page exists (`null` = disabled). */
 const TRIP_HISTORY_ROUTE = null as string | null;
 
 export function AuthNav() {
   const router = useRouter();
   const { user, ready } = useAuthUser();
+  const { role, roleReady } = useUserRole(user, ready);
   const { setIsOpen: setNavbarOpen } = useNavbarContext();
 
   async function handleSignOut() {
@@ -49,7 +52,7 @@ export function AuthNav() {
   }
 
   if (user) {
-    const greeting = `Hi ${firstNameForGreeting(user)}!`;
+    const greeting = `Hi ${firstNameForGreeting(user)},`;
 
     return (
       <DropdownMenu modal={false}>
@@ -78,6 +81,13 @@ export function AuthNav() {
               label="Profile"
               onNavigate={() => setNavbarOpen(false)}
             />
+            {roleReady && role === "admin" ? (
+              <PlaceholderNavItem
+                href={ADMIN_USERS_ROUTE}
+                label="Users"
+                onNavigate={() => setNavbarOpen(false)}
+              />
+            ) : null}
             <PlaceholderNavItem
               href={TRIP_HISTORY_ROUTE}
               label="Trip History"

@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { formatAuthError } from "@/lib/firebase/auth-errors";
 import { postLoginDestination } from "@/lib/auth-return-path";
+import { ensureUserTravelerDefaults } from "@/lib/user-profile";
 
 export function LoginForm() {
   const router = useRouter();
@@ -46,6 +47,8 @@ export function LoginForm() {
         email.trim(),
         password,
       );
+      const u = getFirebaseAuth().currentUser;
+      if (u) await ensureUserTravelerDefaults(u.uid, u.email);
       router.replace(postLoginDestination(searchParams));
       router.refresh();
     } catch (err: unknown) {
@@ -66,6 +69,8 @@ export function LoginForm() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(getFirebaseAuth(), provider);
+      const u = getFirebaseAuth().currentUser;
+      if (u) await ensureUserTravelerDefaults(u.uid, u.email);
       router.replace(postLoginDestination(searchParams));
       router.refresh();
     } catch (err: unknown) {
