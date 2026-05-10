@@ -10,12 +10,6 @@ export type HeroSlide = {
 };
 
 export const heroSlides: readonly HeroSlide[] = [
-  {
-    src: "/SiteInfo/meridiano_logo.png",
-    alt: "Meridiano Ceylon",
-    hideOverlay: true,
-    fit: "logo",
-  },
   { src: "/images/hero/1.jpg", alt: "Sri Lanka travel" },
   { src: "/images/hero/2.jpg", alt: "Sri Lanka travel" },
   { src: "/images/hero/3.jpg", alt: "Sri Lanka travel" },

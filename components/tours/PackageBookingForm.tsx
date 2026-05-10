@@ -25,6 +25,12 @@ const packageChoices = allTours
     label: t.title,
   }));
 
+function tourForPackageSlug(slug: string) {
+  return allTours.find(
+    (t) => t.detailPath && slugFromDetailPath(t.detailPath) === slug,
+  );
+}
+
 export function PackageBookingForm() {
   const searchParams = useSearchParams();
 
@@ -36,6 +42,7 @@ export function PackageBookingForm() {
     const q = searchParams.get("package");
     if (q && getTourDetailBySlug(q)) setPackageSlug(q);
   }, [searchParams]);
+
   const [primaryName, setPrimaryName] = useState("");
   const [primaryPassport, setPrimaryPassport] = useState("");
   const [primaryGender, setPrimaryGender] = useState<"male" | "female" | "">(
@@ -47,8 +54,17 @@ export function PackageBookingForm() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (tourForPackageSlug(packageSlug)?.kind === "specialty") {
+      setAddonIds(new Set());
+    }
+  }, [packageSlug]);
+
   const selectedTitle =
     packageChoices.find((p) => p.slug === packageSlug)?.label ?? "";
+
+  const showOptionalAddons =
+    tourForPackageSlug(packageSlug)?.kind !== "specialty";
 
   function toggleAddon(id: string) {
     setAddonIds((prev) => {
@@ -139,9 +155,11 @@ export function PackageBookingForm() {
       return;
     }
 
-    const addonTitles = addonTours
-      .filter((a) => addonIds.has(a.id))
-      .map((a) => a.title);
+    const selectedTour = tourForPackageSlug(packageSlug);
+    const addonTitles =
+      selectedTour?.kind === "specialty"
+        ? []
+        : addonTours.filter((a) => addonIds.has(a.id)).map((a) => a.title);
 
     const text = buildPackageBookingWhatsAppMessage({
       primaryName: primaryName.trim(),
@@ -344,46 +362,48 @@ export function PackageBookingForm() {
           </label>
         </fieldset>
 
-        <fieldset>
-          <legend className="text-sm font-semibold text-forest">
-            Optional add-ons
-          </legend>
-          <p className="mt-1 text-xs text-stone-500">
-            Tick any you want layered onto this booking. Open a page to read
-            details first.
-          </p>
-          <ul className="mt-4 space-y-3">
-            {addonTours.map((a) => (
-              <li key={a.id}>
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-white px-3 py-3 text-sm transition hover:border-lagoon/30">
-                  <input
-                    type="checkbox"
-                    checked={addonIds.has(a.id)}
-                    onChange={() => toggleAddon(a.id)}
-                    className="mt-1 rounded border-stone-300 text-forest"
-                  />
-                  <span className="text-stone-800">
-                    <span className="font-medium text-forest">{a.title}</span>
-                    {a.detailPath ? (
-                      <>
-                        {" "}
-                        <Link
-                          href={a.detailPath}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-lagoon underline-offset-2 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          View page
-                        </Link>
-                      </>
-                    ) : null}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </fieldset>
+        {showOptionalAddons ? (
+          <fieldset>
+            <legend className="text-sm font-semibold text-forest">
+              Optional add-ons
+            </legend>
+            <p className="mt-1 text-xs text-stone-500">
+              Tick any you want layered onto this booking. Open a page to read
+              details first.
+            </p>
+            <ul className="mt-4 space-y-3">
+              {addonTours.map((a) => (
+                <li key={a.id}>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-white px-3 py-3 text-sm transition hover:border-lagoon/30">
+                    <input
+                      type="checkbox"
+                      checked={addonIds.has(a.id)}
+                      onChange={() => toggleAddon(a.id)}
+                      className="mt-1 rounded border-stone-300 text-forest"
+                    />
+                    <span className="text-stone-800">
+                      <span className="font-medium text-forest">{a.title}</span>
+                      {a.detailPath ? (
+                        <>
+                          {" "}
+                          <Link
+                            href={a.detailPath}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-lagoon underline-offset-2 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            View page
+                          </Link>
+                        </>
+                      ) : null}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        ) : null}
 
         <fieldset>
           <legend className="text-sm font-semibold text-forest">
