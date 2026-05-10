@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut, type User } from "firebase/auth";
 import { useNavbarContext } from "flowbite-react";
 import { UserRound } from "lucide-react";
@@ -36,7 +36,7 @@ export function AuthNav() {
     "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gold/35 bg-white/90 text-forest shadow-sm outline-none ring-offset-2 transition hover:border-gold/50 focus-visible:ring-2 focus-visible:ring-gold/40";
 
   if (!isFirebaseConfigured()) {
-    return <LoggedOutLoginTrigger avatarNavClass={avatarNavClass} />;
+    return <LoggedOutGuestMenu avatarNavClass={avatarNavClass} />;
   }
 
   if (!ready) {
@@ -101,14 +101,70 @@ export function AuthNav() {
     );
   }
 
-  return <LoggedOutLoginTrigger avatarNavClass={avatarNavClass} />;
+  return <LoggedOutGuestMenu avatarNavClass={avatarNavClass} />;
 }
 
-function LoggedOutLoginTrigger({ avatarNavClass }: { avatarNavClass: string }) {
+function LoggedOutGuestMenu({
+  avatarNavClass,
+}: {
+  avatarNavClass: string;
+}) {
+  const pathname = usePathname();
+  const { setIsOpen: setNavbarOpen } = useNavbarContext();
+
+  const loginHref =
+    pathname && pathname !== "/login"
+      ? `/login?next=${encodeURIComponent(pathname)}`
+      : "/login";
   return (
-    <Link href="/login" className={avatarNavClass} aria-label="Login">
-      <UserAvatar photoURL={null} />
-    </Link>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={avatarNavClass}
+          aria-label="Account menu"
+        >
+          <UserAvatar photoURL={null} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="z-[70] min-w-[17rem] border-gold/20 bg-[#e0ebe7] p-0 text-forest shadow-lg"
+      >
+        <div className="border-b border-gold/15 px-3 py-3">
+          <p className="text-sm font-semibold text-forest">Hi Traveller,</p>
+        </div>
+        <div className="flex flex-col gap-4 px-3 py-4">
+          <div className="space-y-2">
+            <p className="text-sm leading-snug text-forest/90">
+              Do you have an account?
+            </p>
+            <DropdownMenuItem
+              className="cursor-pointer justify-center rounded-full bg-gold py-2.5 font-semibold text-cream focus:bg-gold focus:text-cream"
+              asChild
+            >
+              <Link href={loginHref} onClick={() => setNavbarOpen(false)}>
+                Login
+              </Link>
+            </DropdownMenuItem>
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm leading-snug text-forest/90">
+              Still no account?
+            </p>
+            <DropdownMenuItem
+              className="cursor-pointer justify-center rounded-full border border-forest/25 bg-white/60 py-2.5 font-semibold text-forest focus:bg-gold/15 focus:text-forest"
+              asChild
+            >
+              <Link href="/register" onClick={() => setNavbarOpen(false)}>
+                Create an account
+              </Link>
+            </DropdownMenuItem>
+          </div>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

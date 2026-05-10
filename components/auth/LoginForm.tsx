@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   GoogleAuthProvider,
@@ -11,9 +11,11 @@ import {
 import { Card } from "@/components/ui/Card";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 import { formatAuthError } from "@/lib/firebase/auth-errors";
+import { postLoginDestination } from "@/lib/auth-return-path";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +46,7 @@ export function LoginForm() {
         email.trim(),
         password,
       );
-      router.push("/");
+      router.replace(postLoginDestination(searchParams));
       router.refresh();
     } catch (err: unknown) {
       const code =
@@ -64,7 +66,7 @@ export function LoginForm() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(getFirebaseAuth(), provider);
-      router.push("/");
+      router.replace(postLoginDestination(searchParams));
       router.refresh();
     } catch (err: unknown) {
       const code =

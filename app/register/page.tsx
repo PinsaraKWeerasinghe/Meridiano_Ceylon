@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LoginBackLink } from "@/components/auth/LoginBackLink";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata: Metadata = {
@@ -11,12 +11,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-md">
-        <Link
-          href="/login"
-          className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
-        >
-          ← Login
-        </Link>
+        <LoginBackLink className="cursor-pointer text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline" />
         <h1 className="mt-6 font-serif text-3xl font-semibold text-forest sm:text-4xl">
           Create account
         </h1>
