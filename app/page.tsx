@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FlashDealBar } from "@/components/home/FlashDealBar";
 import { Hero } from "@/components/home/Hero";
 import { BuildJourneyForm } from "@/components/home/BuildJourneyForm";
 import { HomeAddonsSection } from "@/components/home/HomeAddonsSection";
@@ -18,6 +19,7 @@ import {
 export default function HomePage() {
   return (
     <>
+      <FlashDealBar />
       <Hero />
       <BuildJourneyForm />
 
