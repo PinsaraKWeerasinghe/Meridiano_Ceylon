@@ -18,6 +18,7 @@ import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 
 const PROFILE_ROUTE = "/profile";
 const ADMIN_USERS_ROUTE = "/admin/users";
+const ADMIN_FLASH_DEAL_ROUTE = "/admin/flash-deal";
 /** Wire when the page exists (`null` = disabled). */
 const TRIP_HISTORY_ROUTE = null as string | null;
 
@@ -82,11 +83,18 @@ export function AuthNav() {
               onNavigate={() => setNavbarOpen(false)}
             />
             {roleReady && role === "admin" ? (
-              <PlaceholderNavItem
-                href={ADMIN_USERS_ROUTE}
-                label="Users"
-                onNavigate={() => setNavbarOpen(false)}
-              />
+              <>
+                <PlaceholderNavItem
+                  href={ADMIN_USERS_ROUTE}
+                  label="Users"
+                  onNavigate={() => setNavbarOpen(false)}
+                />
+                <PlaceholderNavItem
+                  href={ADMIN_FLASH_DEAL_ROUTE}
+                  label="Flash deal"
+                  onNavigate={() => setNavbarOpen(false)}
+                />
+              </>
             ) : null}
             <PlaceholderNavItem
               href={TRIP_HISTORY_ROUTE}

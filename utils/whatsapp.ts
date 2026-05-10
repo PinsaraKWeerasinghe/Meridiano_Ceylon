@@ -143,6 +143,8 @@ export type PackageBookingPayload = {
   phone: string;
   selectedAddonTitles: string[];
   notes: string;
+  /** Non-specialty package booking bill lines for WhatsApp. */
+  estimatedBillLines?: string[];
 };
 
 export function buildPackageBookingWhatsAppMessage(
@@ -178,6 +180,11 @@ export function buildPackageBookingWhatsAppMessage(
 
   lines.push("", "Special notes:");
   lines.push(data.notes.trim() || "—");
+
+  if (data.estimatedBillLines && data.estimatedBillLines.length > 0) {
+    lines.push("", "Estimated pricing (USD):");
+    data.estimatedBillLines.forEach((line) => lines.push(line));
+  }
 
   lines.push(
     "",

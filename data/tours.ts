@@ -3,6 +3,13 @@ export type TourKind = "fixed" | "addon" | "specialty";
 /** Titled bullet block (e.g. “Included with every long stay”) for rich package panels. */
 export type TourHighlightSection = { title: string; items: string[] };
 
+/** Detail-page pricing: tier labels (e.g. vehicle | stays) plus inclusion / exclusion copy. */
+export type TourPriceIncludesBlock = {
+  /** Optional pipe-separated row above `body` (omit when details are only in the paragraph). */
+  tierLabels?: string[];
+  body: string;
+};
+
 export interface TourItem {
   id: string;
   kind: TourKind;
@@ -19,9 +26,19 @@ export interface TourItem {
   highlightSections?: TourHighlightSection[];
   /** When true, titled sections render before the main bullet list (e.g. drop-only “how to book”). */
   highlightSectionsFirst?: boolean;
+  /** When set, shown under the duration chip (e.g. fixed-package pricing). */
+  startingPriceNote?: string;
+  /** When set, tour detail page shows tier row + inclusion paragraph below the price note. */
+  priceIncludesBlock?: TourPriceIncludesBlock;
   note?: string;
   /** When set, fixed-package panels show a “More details” link to this path. */
   detailPath?: string;
+  /** USD base per person on the package booking summary (fixed packages). */
+  bookingBasePriceUsd?: number;
+  /** Flat USD for this add-on when selected (per booking, not × travellers). */
+  bookingAddonPriceUsd?: number;
+  /** Short label on the booking bill line (optional). */
+  bookingBillLabel?: string;
 }
 
 export const fixedPackages: TourItem[] = [
@@ -30,6 +47,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "Beach + Safari (Relaxing Tour)",
     duration: "5 days",
+    startingPriceNote: "From $674 pp",
+    bookingBasePriceUsd: 674,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 4 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       '"No Hurry" – A peaceful journey through the southern coast.',
     detailPath: "/packages/beach-safari-relaxing",
@@ -39,6 +62,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "Hill Country + Beach (Express Tour)",
     duration: "5 days",
+    startingPriceNote: "From $674 pp",
+    bookingBasePriceUsd: 674,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 4 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "A fast-paced journey through culture, mountains, and sea.",
     detailPath: "/packages/hill-country-beach-express",
@@ -48,6 +77,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "The Cultural & Highland Express",
     duration: "7 days",
+    startingPriceNote: "From $1020 pp",
+    bookingBasePriceUsd: 1020,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 6 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "Village life, Ancient History, and the Beautiful Hill Country.",
     detailPath: "/packages/cultural-highland-express",
@@ -57,6 +92,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "Nature & Safari Adventure",
     duration: "7 days",
+    startingPriceNote: "From $1020 pp",
+    bookingBasePriceUsd: 1020,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 6 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "A journey through the mountains leading to the wild heart of Sri Lanka.",
     detailPath: "/packages/nature-safari-adventure",
@@ -66,6 +107,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "The Beach & Wildlife Dream",
     duration: "7 days",
+    startingPriceNote: "From $1020 pp",
+    bookingBasePriceUsd: 1020,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 6 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       'A relaxing journey focused on the ocean, coastal culture, and the "Big Game" of the wild.',
     detailPath: "/packages/beach-wildlife-dream",
@@ -75,6 +122,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "The Ancient & Cultural Grand Tour",
     duration: "10 days",
+    startingPriceNote: "From $1495 pp",
+    bookingBasePriceUsd: 1495,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 9 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "Ancient Cities, UNESCO Heritage, and the Hill Country.",
     detailPath: "/packages/ancient-cultural-grand-tour",
@@ -84,6 +137,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "The Southern Beach & Wildlife Loop",
     duration: "10 days",
+    startingPriceNote: "From $1495 pp",
+    bookingBasePriceUsd: 1495,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 9 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "Coastal relaxation, Galle history, and Safari.",
     detailPath: "/packages/southern-beach-wildlife-loop",
@@ -93,6 +152,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "Wildlife & Wellness Safari",
     duration: "10 days",
+    startingPriceNote: "From $1495 pp",
+    bookingBasePriceUsd: 1495,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 9 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "A rhythmic journey through nature, ancient history, and spiritual healing.",
     detailPath: "/packages/wildlife-wellness-safari",
@@ -102,6 +167,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "Meridiano Ceylon Special (Hidden Gems)",
     duration: "10 days",
+    startingPriceNote: "From $1495 pp",
+    bookingBasePriceUsd: 1495,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 9 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "Tracking, Waterfalls, and the best of Wellawaya.",
     detailPath: "/packages/meridiano-hidden-gems",
@@ -111,6 +182,12 @@ export const fixedPackages: TourItem[] = [
     kind: "fixed",
     title: "North to South Expedition",
     duration: "16 days",
+    startingPriceNote: "From $2490 pp",
+    bookingBasePriceUsd: 2490,
+    priceIncludesBlock: {
+      body:
+        "This includes your transport in a standard AC vehicle and 3–4 star boutique stays for 15 nights with breakfast. Air tickets and entrance tickets are excluded.",
+    },
     description:
       "A complete cross-country journey from the northernmost tip to the southern coast of Sri Lanka.",
     detailPath: "/packages/north-south-expedition",
@@ -136,6 +213,8 @@ export const addonTours: TourItem[] = [
     id: "spec-village-kitchen",
     kind: "addon",
     title: 'The "Village Kitchen" Experience',
+    bookingAddonPriceUsd: 10,
+    bookingBillLabel: "The Village Kitchen",
     description:
       "Spend half a day in a traditional village home. Pick fresh ingredients from the garden and learn to cook authentic Sri Lankan curries over a wood-fire stove.",
     detailPath: "/packages/village-kitchen-experience",
@@ -144,6 +223,7 @@ export const addonTours: TourItem[] = [
     id: "spec-nightlife",
     kind: "addon",
     title: "Nightlife & City Lights",
+    bookingAddonPriceUsd: 20,
     description:
       'Add a guided evening in Colombo or a coastal beach party hub. We handle the transport and the "know-how" so you can enjoy the atmosphere safely.',
     detailPath: "/packages/nightlife-city-lights",
@@ -152,6 +232,7 @@ export const addonTours: TourItem[] = [
     id: "spec-wellness-top-up",
     kind: "addon",
     title: 'Wellness "Top-Up"',
+    bookingAddonPriceUsd: 10,
     description:
       "Enhance any tour with a 2-hour professional Ayurvedic massage or a private guided meditation session at a scenic viewpoint.",
     detailPath: "/packages/wellness-top-up",
@@ -160,6 +241,8 @@ export const addonTours: TourItem[] = [
     id: "spec-shopping",
     kind: "addon",
     title: "Shopping Tours",
+    bookingAddonPriceUsd: 15,
+    bookingBillLabel: "Shopping Concierge",
     description:
       "A dedicated 4-hour stop at trusted partners for genuine gems, handloom fabrics, or high-end tea—guaranteeing quality and fair pricing.",
     detailPath: "/packages/curated-shopping-tours",

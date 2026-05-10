@@ -24,6 +24,8 @@ type FixedPackagePanelProps = {
   alignTextTowardImages?: boolean;
   /** Limit slideshow to the first N images (e.g. `/packages` listing preview). Detail pages use the full gallery. */
   previewMaxImages?: number;
+  /** Home: stack card text from the top so duration + pricing stay clearly visible above the fold. */
+  stackCardContentFromTop?: boolean;
 };
 
 export function FixedPackagePanel({
@@ -36,6 +38,7 @@ export function FixedPackagePanel({
   verticallyCenterCardContent = false,
   alignTextTowardImages = false,
   previewMaxImages,
+  stackCardContentFromTop = false,
 }: FixedPackagePanelProps) {
   const allSrcs = fixedPackageGalleryById[tour.id] ?? [];
   const srcs =
@@ -196,16 +199,34 @@ export function FixedPackagePanel({
           {tour.description}
         </p>
       )}
-      {tour.duration ? (
+      {tour.duration || tour.startingPriceNote ? (
         <div
           className={cn(
-            "mt-2",
-            alignTextTowardImages && cardOnLeft && "flex justify-end",
+            "mt-2 flex flex-col gap-2",
+            alignTextTowardImages && cardOnLeft && "items-end",
           )}
         >
-          <span className="inline-flex shrink-0 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
-            {tour.duration}
-          </span>
+          {tour.duration ? (
+            <div
+              className={cn(
+                alignTextTowardImages && cardOnLeft && "flex justify-end",
+              )}
+            >
+              <span className="inline-flex shrink-0 rounded-full bg-stone-100 px-3 py-1 text-xs font-medium text-stone-600">
+                {tour.duration}
+              </span>
+            </div>
+          ) : null}
+          {tour.startingPriceNote ? (
+            <p
+              className={cn(
+                "text-sm font-semibold leading-snug text-forest",
+                alignTextTowardImages && cardOnLeft && "text-right",
+              )}
+            >
+              {tour.startingPriceNote}
+            </p>
+          ) : null}
         </div>
       ) : null}
       {tour.highlightSectionsFirst ? (
@@ -230,7 +251,8 @@ export function FixedPackagePanel({
   const cardInner = verticallyCenterCardContent ? (
     <div
       className={cn(
-        "flex min-h-0 flex-1 flex-col justify-center",
+        "flex min-h-0 flex-1 flex-col",
+        stackCardContentFromTop ? "justify-start" : "justify-center",
         inwardAlignClass,
       )}
     >

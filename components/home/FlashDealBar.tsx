@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
-
-/** Sri Lanka — flash ends end of day 11 May 2026 */
-const DEAL_END_MS = Date.parse("2026-05-11T23:59:59+05:30");
-/** Window start for availability bar (portion of sale elapsed) */
-const DEAL_WINDOW_START_MS = Date.parse("2026-05-10T00:00:00+05:30");
+import { formatDealDateLabel, formatDealDateShort } from "@/lib/flash-deal-colombo";
+import {
+  FLASH_DEAL_DETAIL_PATH,
+  subscribeFlashDealSettingsForBar,
+  type FlashDealBarConfig,
+} from "@/lib/flash-deal-settings";
+import { isFirebaseConfigured } from "@/lib/firebase";
 
 function pad2(n: number) {
   return n.toString().padStart(2, "0");
@@ -15,23 +17,38 @@ function pad2(n: number) {
 
 function formatRemaining(ms: number) {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  const days = Math.floor(totalSec / 86400);
+  const restAfterDays = totalSec % 86400;
+  const h = Math.floor(restAfterDays / 3600);
+  const m = Math.floor((restAfterDays % 3600) / 60);
+  const s = restAfterDays % 60;
+  return `${days}:${pad2(h)}:${pad2(m)}:${pad2(s)}`;
 }
 
-function availabilityPercentRemaining(now: number): number {
-  if (now <= DEAL_WINDOW_START_MS) return 100;
-  if (now >= DEAL_END_MS) return 0;
-  const windowMs = DEAL_END_MS - DEAL_WINDOW_START_MS;
-  const leftMs = DEAL_END_MS - now;
+function availabilityPercentRemaining(
+  now: number,
+  windowStartMs: number,
+  dealEndMs: number,
+): number {
+  if (now <= windowStartMs) return 100;
+  if (now >= dealEndMs) return 0;
+  const windowMs = dealEndMs - windowStartMs;
+  const leftMs = dealEndMs - now;
   return Math.min(100, Math.max(0, (leftMs / windowMs) * 100));
 }
 
-export function FlashDealBar() {
+type FlashDealBarChromeProps = {
+  config: FlashDealBarConfig;
+  dismissed: boolean;
+  onDismiss: () => void;
+};
+
+function FlashDealBarChrome({
+  config,
+  dismissed,
+  onDismiss,
+}: FlashDealBarChromeProps) {
   const [now, setNow] = useState<number | null>(null);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     if (dismissed) return;
@@ -44,23 +61,28 @@ export function FlashDealBar() {
     return null;
   }
 
-  if (now !== null && now > DEAL_END_MS) {
+  const dealEndMs = config.dealEndMs;
+  const windowStartMs = config.dealWindowStartMs;
+
+  if (now !== null && now > dealEndMs) {
     return null;
   }
 
   const remainingMs =
-    now === null ? 0 : Math.max(0, DEAL_END_MS - now);
+    now === null ? 0 : Math.max(0, dealEndMs - now);
 
   if (now !== null && remainingMs <= 0) {
     return null;
   }
 
   const timerDisplay =
-    now === null ? "—:—:—" : formatRemaining(remainingMs);
+    now === null ? "—:—:—:—" : formatRemaining(remainingMs);
   const pctLeft =
-    now === null ? 100 : availabilityPercentRemaining(now);
+    now === null ? 100 : availabilityPercentRemaining(now, windowStartMs, dealEndMs);
 
-  /** Extra gap below navbar — nav is z-50 vs flash z-40, so overlap hides the bar unless top clears true nav height. */
+  const dateLabel = formatDealDateLabel(config.dealDate);
+  const shortDateLabel = formatDealDateShort(config.dealDate);
+
   const topMobileBar =
     "top-[calc(var(--maintenance-strip-h,0px)+var(--navbar-h)+0.75rem)]";
   const topDesktopCard =
@@ -68,7 +90,6 @@ export function FlashDealBar() {
 
   return (
     <>
-      {/* Mobile: thin full-width strip directly under the navbar */}
       <section
         role="region"
         aria-label="Limited-time flash deal"
@@ -83,11 +104,17 @@ export function FlashDealBar() {
               ·
             </span>
             <time
-              dateTime="2026-05-11"
+              dateTime={config.dealDate}
               className="shrink-0 text-neutral-400"
             >
-              <span className="text-amber-200/95">11 May &apos;26</span>
+              <span className="text-amber-200/95">{shortDateLabel}</span>
             </time>
+            <span className="text-neutral-500" aria-hidden>
+              ·
+            </span>
+            <span className="min-w-0 truncate font-medium text-neutral-300">
+              {config.title}
+            </span>
             <span className="text-neutral-500" aria-hidden>
               ·
             </span>
@@ -103,14 +130,14 @@ export function FlashDealBar() {
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <Link
-              href="/packages/book"
+              href={FLASH_DEAL_DETAIL_PATH}
               className="rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-bold text-neutral-950 transition hover:bg-amber-300"
             >
-              Book
+              Details
             </Link>
             <button
               type="button"
-              onClick={() => setDismissed(true)}
+              onClick={onDismiss}
               className="rounded-md p-1 text-neutral-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80"
               aria-label="Close flash deal"
             >
@@ -133,7 +160,6 @@ export function FlashDealBar() {
         </div>
       </section>
 
-      {/* Desktop / tablet: floating card (top-right) */}
       <section
         role="region"
         aria-label="Limited-time flash deal"
@@ -146,7 +172,7 @@ export function FlashDealBar() {
             </span>
             <button
               type="button"
-              onClick={() => setDismissed(true)}
+              onClick={onDismiss}
               className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-neutral-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80"
               aria-label="Close flash deal"
             >
@@ -154,15 +180,15 @@ export function FlashDealBar() {
             </button>
           </div>
           <p className="text-xs font-semibold leading-snug text-white">
-            Exclusive Sri Lanka packages — limited slots
+            {config.title}
           </p>
 
           <time
-            dateTime="2026-05-11"
+            dateTime={config.dealDate}
             className="text-[11px] font-medium text-neutral-400"
           >
             Deal date:{" "}
-            <span className="text-amber-200">11th May 2026</span>
+            <span className="text-amber-200">{dateLabel}</span>
           </time>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -197,13 +223,45 @@ export function FlashDealBar() {
           </div>
 
           <Link
-            href="/packages/book"
+            href={FLASH_DEAL_DETAIL_PATH}
             className="mt-1 block w-full rounded-full bg-amber-400 py-2 text-center text-xs font-bold text-neutral-950 transition hover:bg-amber-300"
           >
-            Book now
+            Details
           </Link>
         </div>
       </section>
     </>
+  );
+}
+
+export function FlashDealBar() {
+  const [config, setConfig] = useState<FlashDealBarConfig | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) {
+      setHydrated(true);
+      setConfig(null);
+      return;
+    }
+
+    const unsub = subscribeFlashDealSettingsForBar((c) => {
+      setConfig(c);
+      setHydrated(true);
+    });
+    return unsub;
+  }, []);
+
+  if (!hydrated || !config) {
+    return null;
+  }
+
+  return (
+    <FlashDealBarChrome
+      config={config}
+      dismissed={dismissed}
+      onDismiss={() => setDismissed(true)}
+    />
   );
 }

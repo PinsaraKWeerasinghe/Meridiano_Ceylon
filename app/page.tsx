@@ -23,7 +23,10 @@ export default function HomePage() {
       <Hero />
       <BuildJourneyForm />
 
-      <section className="border-t border-lagoon/15 bg-lagoon/10 px-4 py-16 sm:px-6">
+      <section
+        id="fixed-packages"
+        className="border-t border-lagoon/15 bg-lagoon/10 px-4 py-16 sm:px-6"
+      >
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <div>
@@ -53,6 +56,7 @@ export default function HomePage() {
                 slideshowClassName={packagesGreenSlideshow}
                 scrollRevealImages
                 verticallyCenterCardContent
+                stackCardContentFromTop
                 alignTextTowardImages
               />
             ))}

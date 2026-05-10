@@ -169,7 +169,35 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
         </Card>
 
         {showBookNow ? (
-          <div className="mt-12 flex justify-center border-t border-lagoon/20 pt-10">
+          <div className="mt-12 flex flex-col items-center gap-6 border-t border-lagoon/20 pt-10">
+            {!detail.specialtyDetail &&
+            (tourRecord?.startingPriceNote || tourRecord?.priceIncludesBlock) ? (
+              <Card
+                className={cn(
+                  "w-full max-w-xl space-y-3 px-5 py-4 text-center text-sm leading-relaxed text-stone-700",
+                  packagesGreenCard,
+                )}
+              >
+                {tourRecord.startingPriceNote ? (
+                  <p className="font-semibold text-forest">
+                    {tourRecord.startingPriceNote}
+                  </p>
+                ) : null}
+                {tourRecord.priceIncludesBlock ? (
+                  <>
+                    {tourRecord.priceIncludesBlock.tierLabels &&
+                    tourRecord.priceIncludesBlock.tierLabels.length > 0 ? (
+                      <p className="text-stone-700">
+                        {tourRecord.priceIncludesBlock.tierLabels.join(" | ")}
+                      </p>
+                    ) : null}
+                    <p className="leading-relaxed text-stone-700">
+                      {tourRecord.priceIncludesBlock.body}
+                    </p>
+                  </>
+                ) : null}
+              </Card>
+            ) : null}
             <Link
               href={`/packages/book?package=${encodeURIComponent(detail.slug)}`}
               className="inline-flex min-w-[200px] items-center justify-center rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349]"

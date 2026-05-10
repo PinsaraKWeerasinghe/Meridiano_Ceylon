@@ -6,6 +6,10 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { addonTours, allTours } from "@/data/tours";
 import { getTourDetailBySlug } from "@/data/tour-detail-content";
+import {
+  computeBookingBillBreakdown,
+  formatBookingBillWhatsAppLines,
+} from "@/lib/package-booking-bill";
 import { cn } from "@/lib/utils";
 import {
   buildPackageBookingWhatsAppMessage,
@@ -63,8 +67,22 @@ export function PackageBookingForm() {
   const selectedTitle =
     packageChoices.find((p) => p.slug === packageSlug)?.label ?? "";
 
-  const showOptionalAddons =
-    tourForPackageSlug(packageSlug)?.kind !== "specialty";
+  const selectedPackageTour = tourForPackageSlug(packageSlug);
+
+  const showOptionalAddons = selectedPackageTour?.kind !== "specialty";
+
+  const selectedAddonsForBill = addonTours.filter((a) => addonIds.has(a.id));
+  const travellerCountForBill =
+    1 +
+    partners.filter((p) => p.name.trim() && p.passport.trim()).length;
+
+  const billBreakdown = showOptionalAddons
+    ? computeBookingBillBreakdown(
+        selectedPackageTour,
+        selectedAddonsForBill,
+        travellerCountForBill,
+      )
+    : null;
 
   function toggleAddon(id: string) {
     setAddonIds((prev) => {
@@ -155,11 +173,16 @@ export function PackageBookingForm() {
       return;
     }
 
-    const selectedTour = tourForPackageSlug(packageSlug);
+    const selectedTour = selectedPackageTour;
     const addonTitles =
       selectedTour?.kind === "specialty"
         ? []
         : addonTours.filter((a) => addonIds.has(a.id)).map((a) => a.title);
+
+    const estimatedBillLines =
+      billBreakdown != null
+        ? formatBookingBillWhatsAppLines(billBreakdown)
+        : undefined;
 
     const text = buildPackageBookingWhatsAppMessage({
       primaryName: primaryName.trim(),
@@ -170,6 +193,7 @@ export function PackageBookingForm() {
       phone: phone.trim(),
       selectedAddonTitles: addonTitles,
       notes,
+      estimatedBillLines,
     });
     openWhatsAppWithText(text);
   }
@@ -417,6 +441,107 @@ export function PackageBookingForm() {
             className="mt-3 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
           />
         </fieldset>
+
+        {billBreakdown ? (
+          <fieldset>
+            <legend className="text-sm font-semibold text-forest">
+              Booking summary
+            </legend>
+            <p className="mt-1 text-xs text-stone-500">
+              Package price is per person and scales with travellers (lead plus
+              partners with completed details). Add-ons are a flat fee per
+              selection for this booking. Meridiano confirms the final amount
+              before payment.
+            </p>
+            <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm text-stone-800">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-stone-600">
+                  Travellers in this estimate:{" "}
+                  <span className="tabular-nums text-forest">
+                    {billBreakdown.travellerCount}
+                  </span>
+                </p>
+
+                <div className="flex justify-between gap-4 border-b border-stone-200 pb-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-forest">
+                      {billBreakdown.packageTitle}
+                    </p>
+                    {billBreakdown.durationLabel ? (
+                      <p className="mt-0.5 text-xs text-stone-500">
+                        {billBreakdown.durationLabel}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {billBreakdown.packagePerPersonUsd != null &&
+                    billBreakdown.packageLineTotalUsd != null ? (
+                      <>
+                        <p className="font-semibold tabular-nums text-forest">
+                          ${billBreakdown.packageLineTotalUsd}
+                        </p>
+                        <p className="text-xs text-stone-500">
+                          ${billBreakdown.packagePerPersonUsd} ×{" "}
+                          {billBreakdown.travellerCount}{" "}
+                          {billBreakdown.travellerCount === 1
+                            ? "person"
+                            : "people"}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-stone-600">On request</p>
+                    )}
+                  </div>
+                </div>
+
+                {billBreakdown.addonRows.length > 0 ? (
+                  <ul className="space-y-2">
+                    {billBreakdown.addonRows.map((row) => (
+                      <li
+                        key={row.label}
+                        className="flex justify-between gap-4 border-stone-100"
+                      >
+                        <span className="text-stone-700">
+                          • {row.label}
+                        </span>
+                        <span className="shrink-0 text-right tabular-nums font-medium text-stone-900">
+                          {row.amountUsd != null ? (
+                            <span className="block">${row.amountUsd}</span>
+                          ) : (
+                            "—"
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-stone-500">No add-ons selected.</p>
+                )}
+
+                {billBreakdown.totalUsd != null ? (
+                  <div className="space-y-1 border-t border-stone-200 pt-3">
+                    <div className="flex justify-between gap-4 font-semibold text-forest">
+                      <span>
+                        {billBreakdown.packagePerPersonUsd != null
+                          ? "Estimated total"
+                          : "Add-ons subtotal"}
+                      </span>
+                      <span className="tabular-nums">
+                        ${billBreakdown.totalUsd}
+                      </span>
+                    </div>
+                    {billBreakdown.packagePerPersonUsd == null &&
+                    billBreakdown.addonRows.length > 0 ? (
+                      <p className="text-xs font-normal text-stone-500">
+                        Package price quoted separately.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </fieldset>
+        ) : null}
 
         {error ? (
           <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">
