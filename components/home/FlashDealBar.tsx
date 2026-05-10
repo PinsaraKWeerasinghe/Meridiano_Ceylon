@@ -60,76 +60,150 @@ export function FlashDealBar() {
   const pctLeft =
     now === null ? 100 : availabilityPercentRemaining(now);
 
+  /** Extra gap below navbar — nav is z-50 vs flash z-40, so overlap hides the bar unless top clears true nav height. */
+  const topMobileBar =
+    "top-[calc(var(--maintenance-strip-h,0px)+var(--navbar-h)+0.75rem)]";
+  const topDesktopCard =
+    "md:top-[calc(var(--maintenance-strip-h,0px)+var(--navbar-h)+1rem)]";
+
   return (
-    <section
-      role="region"
-      aria-label="Limited-time flash deal"
-      className="fixed right-[max(0.75rem,env(safe-area-inset-right))] top-[calc(var(--maintenance-strip-h,0px)+var(--navbar-h)+0.75rem)] z-40 w-[min(calc(100vw-1.5rem),20rem)] rounded-xl border-2 border-amber-400/90 bg-neutral-950 p-3 text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)] sm:p-4"
-    >
-      <div className="flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
-            Flash deal
-          </span>
-          <button
-            type="button"
-            onClick={() => setDismissed(true)}
-            className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-neutral-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80"
-            aria-label="Close flash deal"
-          >
-            <X className="h-4 w-4" aria-hidden strokeWidth={2} />
-          </button>
-        </div>
-        <p className="text-xs font-semibold leading-snug text-white">
-          Exclusive Sri Lanka packages — limited slots
-        </p>
-
-        <time
-          dateTime="2026-05-11"
-          className="text-[11px] font-medium text-neutral-400"
-        >
-          Deal date:{" "}
-          <span className="text-amber-200">11th May 2026</span>
-        </time>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-            Ends in
-          </span>
-          <span className="tabular-nums text-base font-bold tracking-wide text-amber-300 sm:text-lg">
-            {timerDisplay}
-          </span>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between gap-2 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-            <span>Availability</span>
-            <span className="tabular-nums text-neutral-200">
-              {Math.round(pctLeft)}% remaining
+    <>
+      {/* Mobile: thin full-width strip directly under the navbar */}
+      <section
+        role="region"
+        aria-label="Limited-time flash deal"
+        className={`fixed inset-x-0 z-40 border-b-2 border-amber-400/90 bg-neutral-950 py-1.5 pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))] text-white shadow-[0_6px_16px_rgba(0,0,0,0.28)] md:hidden ${topMobileBar}`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] leading-tight sm:text-[11px]">
+            <span className="shrink-0 font-bold uppercase tracking-wider text-amber-300">
+              Flash deal
+            </span>
+            <span className="text-neutral-500" aria-hidden>
+              ·
+            </span>
+            <time
+              dateTime="2026-05-11"
+              className="shrink-0 text-neutral-400"
+            >
+              <span className="text-amber-200/95">11 May &apos;26</span>
+            </time>
+            <span className="text-neutral-500" aria-hidden>
+              ·
+            </span>
+            <span className="tabular-nums font-semibold text-amber-300">
+              {timerDisplay}
+            </span>
+            <span className="text-neutral-500" aria-hidden>
+              ·
+            </span>
+            <span className="tabular-nums text-neutral-400">
+              {Math.round(pctLeft)}% left
             </span>
           </div>
-          <div
-            className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-800"
-            role="progressbar"
-            aria-valuenow={Math.round(pctLeft)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Deal availability remaining"
-          >
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-300 transition-[width] duration-500 ease-out"
-              style={{ width: `${pctLeft}%` }}
-            />
+          <div className="flex shrink-0 items-center gap-1">
+            <Link
+              href="/packages/book"
+              className="rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-bold text-neutral-950 transition hover:bg-amber-300"
+            >
+              Book
+            </Link>
+            <button
+              type="button"
+              onClick={() => setDismissed(true)}
+              className="rounded-md p-1 text-neutral-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80"
+              aria-label="Close flash deal"
+            >
+              <X className="h-4 w-4" aria-hidden strokeWidth={2} />
+            </button>
           </div>
         </div>
-
-        <Link
-          href="/packages/book"
-          className="mt-1 block w-full rounded-full bg-amber-400 py-2 text-center text-xs font-bold text-neutral-950 transition hover:bg-amber-300"
+        <div
+          className="mt-1.5 h-1 overflow-hidden rounded-full bg-neutral-800"
+          role="progressbar"
+          aria-valuenow={Math.round(pctLeft)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Deal availability remaining"
         >
-          Book now
-        </Link>
-      </div>
-    </section>
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-300 transition-[width] duration-500 ease-out"
+            style={{ width: `${pctLeft}%` }}
+          />
+        </div>
+      </section>
+
+      {/* Desktop / tablet: floating card (top-right) */}
+      <section
+        role="region"
+        aria-label="Limited-time flash deal"
+        className={`fixed z-40 hidden w-[min(calc(100vw-1.5rem),20rem)] rounded-xl border-2 border-amber-400/90 bg-neutral-950 p-3 text-white shadow-[0_8px_32px_rgba(0,0,0,0.45)] md:right-[max(0.75rem,env(safe-area-inset-right))] ${topDesktopCard} md:block md:p-4`}
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
+              Flash deal
+            </span>
+            <button
+              type="button"
+              onClick={() => setDismissed(true)}
+              className="-mr-1 -mt-1 shrink-0 rounded-md p-1 text-neutral-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80"
+              aria-label="Close flash deal"
+            >
+              <X className="h-4 w-4" aria-hidden strokeWidth={2} />
+            </button>
+          </div>
+          <p className="text-xs font-semibold leading-snug text-white">
+            Exclusive Sri Lanka packages — limited slots
+          </p>
+
+          <time
+            dateTime="2026-05-11"
+            className="text-[11px] font-medium text-neutral-400"
+          >
+            Deal date:{" "}
+            <span className="text-amber-200">11th May 2026</span>
+          </time>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+              Ends in
+            </span>
+            <span className="tabular-nums text-base font-bold tracking-wide text-amber-300 md:text-lg">
+              {timerDisplay}
+            </span>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between gap-2 text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+              <span>Availability</span>
+              <span className="tabular-nums text-neutral-200">
+                {Math.round(pctLeft)}% remaining
+              </span>
+            </div>
+            <div
+              className="mt-1.5 h-2 overflow-hidden rounded-full bg-neutral-800"
+              role="progressbar"
+              aria-valuenow={Math.round(pctLeft)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Deal availability remaining"
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-300 transition-[width] duration-500 ease-out"
+                style={{ width: `${pctLeft}%` }}
+              />
+            </div>
+          </div>
+
+          <Link
+            href="/packages/book"
+            className="mt-1 block w-full rounded-full bg-amber-400 py-2 text-center text-xs font-bold text-neutral-950 transition hover:bg-amber-300"
+          >
+            Book now
+          </Link>
+        </div>
+      </section>
+    </>
   );
 }
