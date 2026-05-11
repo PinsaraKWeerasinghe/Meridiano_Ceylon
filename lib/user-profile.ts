@@ -38,12 +38,18 @@ export function normalizeUserRole(value: unknown): UserRole {
   return DEFAULT_USER_ROLE;
 }
 
+/** Lead traveller gender — used for package / flash-deal bookings. */
+export type TravellerGender = "male" | "female";
+
 /** Saved from the profile form — `role` is changed by admins (Users page) or Firestore console. */
 export type UserProfileFields = {
   firstName: string;
   lastName: string;
   age: number | null;
   passportId: string;
+  gender: TravellerGender | "";
+  /** Contact / WhatsApp — include country code */
+  phone: string;
 };
 
 export type UserProfileDoc = UserProfileFields & {
@@ -75,11 +81,16 @@ function coerceProfile(data: DocumentData | undefined): UserProfileDoc | null {
     const n = parseInt(ageRaw, 10);
     if (Number.isFinite(n)) age = n;
   }
+  const genderRaw = data.gender;
+  const gender: TravellerGender | "" =
+    genderRaw === "male" || genderRaw === "female" ? genderRaw : "";
   return {
     firstName: typeof data.firstName === "string" ? data.firstName : "",
     lastName: typeof data.lastName === "string" ? data.lastName : "",
     age,
     passportId: typeof data.passportId === "string" ? data.passportId : "",
+    gender,
+    phone: typeof data.phone === "string" ? data.phone : "",
     role: normalizeUserRole(data.role),
     email: typeof data.email === "string" ? data.email : undefined,
   };
@@ -106,6 +117,13 @@ export async function saveUserProfile(
     lastName: profile.lastName.trim(),
     age: profile.age,
     passportId: profile.passportId.trim(),
+    gender:
+      profile.gender === "female"
+        ? "female"
+        : profile.gender === "male"
+          ? "male"
+          : "",
+    phone: profile.phone.trim(),
     updatedAt: serverTimestamp(),
   };
   if (authEmail != null && authEmail.trim() !== "") {
@@ -129,6 +147,8 @@ export async function seedNewRegisteredUser(
       lastName: "",
       age: null,
       passportId: "",
+      gender: "",
+      phone: "",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     },
@@ -154,6 +174,8 @@ export async function ensureUserTravelerDefaults(
       lastName: "",
       age: null,
       passportId: "",
+      gender: "",
+      phone: "",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

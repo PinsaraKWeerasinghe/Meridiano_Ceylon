@@ -45,6 +45,8 @@ export function ProfileForm() {
   const [lastName, setLastName] = useState("");
   const [age, setAge] = useState("");
   const [passportId, setPassportId] = useState("");
+  const [gender, setGender] = useState<"" | "male" | "female">("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -64,6 +66,8 @@ export function ProfileForm() {
       lastName: fromName.lastName,
       age: null,
       passportId: "",
+      gender: "",
+      phone: "",
     };
     try {
       let stored = await fetchUserProfile(u.uid);
@@ -77,6 +81,8 @@ export function ProfileForm() {
           lastName: stored.lastName || fromName.lastName,
           age: stored.age,
           passportId: stored.passportId,
+          gender: stored.gender,
+          phone: stored.phone,
         };
       }
     } catch {
@@ -86,6 +92,10 @@ export function ProfileForm() {
     setLastName(next.lastName);
     setAge(next.age != null ? String(next.age) : "");
     setPassportId(next.passportId);
+    setGender(
+      next.gender === "female" ? "female" : next.gender === "male" ? "male" : "",
+    );
+    setPhone(next.phone);
     setPhotoFile(null);
     setPhotoPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -190,6 +200,24 @@ export function ProfileForm() {
       return;
     }
 
+    if (!passportId.trim()) {
+      setError("Passport ID is required.");
+      setSaving(false);
+      return;
+    }
+
+    if (!phone.trim()) {
+      setError("Phone number is required (include country code).");
+      setSaving(false);
+      return;
+    }
+
+    if (gender !== "male" && gender !== "female") {
+      setError("Please select your gender.");
+      setSaving(false);
+      return;
+    }
+
     let ageNum: number | null = null;
     if (age.trim() !== "") {
       const n = parseInt(age, 10);
@@ -206,6 +234,8 @@ export function ProfileForm() {
       lastName: lastName.trim(),
       age: ageNum,
       passportId: passportId.trim(),
+      gender,
+      phone: phone.trim(),
     };
 
     const displayName = [profile.firstName, profile.lastName]
@@ -405,16 +435,69 @@ export function ProfileForm() {
             />
           </label>
           <label className="block text-sm font-medium text-forest">
-            Passport ID
+            Passport ID{" "}
+            <span className="text-red-600" aria-hidden>
+              *
+            </span>
             <input
               type="text"
               value={passportId}
               onChange={(e) => setPassportId(e.target.value)}
               autoComplete="off"
+              required
+              aria-required={true}
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
         </div>
+
+        <label className="block text-sm font-medium text-forest">
+          Phone / WhatsApp{" "}
+          <span className="text-red-600" aria-hidden>
+            *
+          </span>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
+            placeholder="+94 …"
+            required
+            aria-required={true}
+            className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
+          />
+          <span className="mt-1 block text-xs text-stone-500">
+            Include country code — used for flash-deal bookings.
+          </span>
+        </label>
+
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-forest">
+            Gender <span className="text-red-600">*</span>
+          </legend>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-800">
+              <input
+                type="radio"
+                name="profile-gender"
+                checked={gender === "male"}
+                onChange={() => setGender("male")}
+                className="text-forest"
+              />
+              Male
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-800">
+              <input
+                type="radio"
+                name="profile-gender"
+                checked={gender === "female"}
+                onChange={() => setGender("female")}
+                className="text-forest"
+              />
+              Female
+            </label>
+          </div>
+        </fieldset>
 
         <label className="block text-sm font-medium text-forest">
           Email{" "}

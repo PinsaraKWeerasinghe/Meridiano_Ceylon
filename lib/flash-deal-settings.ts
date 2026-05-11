@@ -29,6 +29,9 @@ export const FLASH_DEAL_LEGACY_DOC_ID = "current";
 /** @deprecated Use {@link FLASH_DEAL_LEGACY_DOC_ID} */
 export const FLASH_DEAL_CAMPAIGN_DOC_ID = FLASH_DEAL_LEGACY_DOC_ID;
 
+/** Public booking slug stored on confirmation docs (`packageSlug`). */
+export const FLASH_DEAL_BOOKING_PACKAGE_SLUG = "flash-deal";
+
 /** Public route for full flash-deal content */
 export const FLASH_DEAL_DETAIL_PATH = "/flash-deal";
 
@@ -67,8 +70,14 @@ export type FlashDealBarConfig = {
 /** Full offer copy for the `/flash-deal` page (banner can still show when this parses). */
 export type FlashDealDetailContent = Omit<
   FlashDealSettingsInput,
-  "disabled"
+  "disabled" | "isFeatured"
 >;
+
+/** Featured or legacy-resolved campaign shown on `/flash-deal`. */
+export type FlashDealPublicResolved = {
+  dealDocId: string;
+  detail: FlashDealDetailContent;
+};
 
 export const DEFAULT_ITINERARY_SNAP: FlashDealItinerarySnap = {
   title: "Itinerary highlight",
@@ -495,6 +504,75 @@ export async function saveFlashDealSettings(
   return { dealId };
 }
 
+function pickBestFeaturedDealDetail(
+  snap: QuerySnapshot,
+): FlashDealPublicResolved | null {
+  let best: { dealDocId: string; detail: FlashDealDetailContent; ms: number } | null =
+    null;
+  for (const d of snap.docs) {
+    const data = d.data() as Record<string, unknown>;
+    const detail = parseFlashDealForDetailPage(data);
+    if (!detail) continue;
+    const ms = docSortMs(data);
+    if (!best || ms >= best.ms)
+      best = { dealDocId: d.id, detail, ms };
+  }
+  return best ? { dealDocId: best.dealDocId, detail: best.detail } : null;
+}
+
+/**
+ * Resolved featured campaign + parsed detail for `/flash-deal`. Fallback: legacy
+ * {@link FLASH_DEAL_LEGACY_DOC_ID} doc when nothing featured parses as public.
+ */
+export function subscribeFlashDealPublic(
+  onValue: (value: FlashDealPublicResolved | null) => void,
+): Unsubscribe {
+  const db = getFirestoreDb();
+  let featured: FlashDealPublicResolved | null = null;
+  let legacy: FlashDealPublicResolved | null = null;
+
+  const emit = () => onValue(featured ?? legacy);
+
+  const unsubFeatured = onSnapshot(
+    query(
+      collection(db, FLASH_DEALS_COLLECTION),
+      where("isFeatured", "==", true),
+      limit(25),
+    ),
+    (qSnap) => {
+      featured = pickBestFeaturedDealDetail(qSnap);
+      emit();
+    },
+    () => {
+      featured = null;
+      emit();
+    },
+  );
+
+  const unsubLegacy = onSnapshot(
+    doc(db, FLASH_DEALS_COLLECTION, FLASH_DEAL_LEGACY_DOC_ID),
+    (dSnap: DocumentSnapshot) => {
+      if (!dSnap.exists()) legacy = null;
+      else {
+        const detail = parseFlashDealForDetailPage(
+          dSnap.data() as Record<string, unknown>,
+        );
+        legacy = detail ? { dealDocId: dSnap.id, detail } : null;
+      }
+      emit();
+    },
+    () => {
+      legacy = null;
+      emit();
+    },
+  );
+
+  return () => {
+    unsubFeatured();
+    unsubLegacy();
+  };
+}
+
 export function subscribeFlashDealSettingsForBar(
   onConfig: (config: FlashDealBarConfig | null) => void,
 ): Unsubscribe {
@@ -504,5 +582,5 @@ export function subscribeFlashDealSettingsForBar(
 export function subscribeFlashDealDetailPage(
   onDetail: (detail: FlashDealDetailContent | null) => void,
 ): Unsubscribe {
-  return subscribeFeaturedOrLegacyFlashDeal(parseFlashDealForDetailPage, onDetail);
+  return subscribeFlashDealPublic((v) => onDetail(v?.detail ?? null));
 }
