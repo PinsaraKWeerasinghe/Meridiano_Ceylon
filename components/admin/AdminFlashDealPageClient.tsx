@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
 import { useUserRole } from "@/components/auth/useUserRole";
 import { Card } from "@/components/ui/Card";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import {
   createEmptyFlashDealDraft,
-  DEFAULT_ITINERARY_SNAP,
+  EMPTY_ITINERARY_SNAP,
   FLASH_DEALS_COLLECTION,
   listFlashDealsForAdmin,
   loadFlashDealForAdminPage,
@@ -32,10 +32,12 @@ function formatDateTime(value: Date): string {
 export function AdminFlashDealPageClient() {
   const { user, ready: authReady } = useAuthUser();
   const { role, roleReady } = useUserRole(user, authReady);
+  /** Bumps when starting a new load or clearing to draft so stale async cannot repopulate the form. */
+  const reloadTicketRef = useRef(0);
+  const adminUid = user?.uid;
 
   const [title, setTitle] = useState("");
   const [dealDate, setDealDate] = useState("");
-  const [disabled, setDisabled] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
   const [description, setDescription] = useState("");
   const [fixedTourStartDate, setFixedTourStartDate] = useState("");
@@ -47,7 +49,7 @@ export function AdminFlashDealPageClient() {
   const [registrationPrice, setRegistrationPrice] = useState("");
   const [itinerarySnaps, setItinerarySnaps] = useState<
     FlashDealItinerarySnap[]
-  >([{ ...DEFAULT_ITINERARY_SNAP }]);
+  >([{ ...EMPTY_ITINERARY_SNAP }]);
 
   const [meta, setMeta] = useState<FlashDealAdminMeta | null>(null);
   /** `null` = new unsaved draft (next save allocates a Firestore doc id). */
@@ -62,7 +64,6 @@ export function AdminFlashDealPageClient() {
   const applyValuesToForm = useCallback((values: FlashDealSettingsInput) => {
     setTitle(values.title);
     setDealDate(values.dealDate);
-    setDisabled(values.disabled);
     setIsFeatured(values.isFeatured);
     setDescription(values.description);
     setFixedTourStartDate(values.fixedTourStartDate);
@@ -75,31 +76,39 @@ export function AdminFlashDealPageClient() {
     setItinerarySnaps(
       values.itinerarySnaps.length > 0
         ? values.itinerarySnaps.map((s) => ({ ...s }))
-        : [{ ...DEFAULT_ITINERARY_SNAP }],
+        : [{ ...EMPTY_ITINERARY_SNAP }],
     );
   }, []);
 
   const reloadDealFromFirestore = useCallback(async (dealId: string | null) => {
+    reloadTicketRef.current += 1;
+    const ticket = reloadTicketRef.current;
     setError(null);
     setSavedOk(false);
     setLoading(true);
     try {
       const result = await loadFlashDealForAdminPage(dealId);
+      if (ticket !== reloadTicketRef.current) return;
       setEditingDealId(result.dealId);
       applyValuesToForm(result.values);
       setMeta(result.meta);
     } catch (err) {
+      if (ticket !== reloadTicketRef.current) return;
       setError(
         err instanceof Error ? err.message : "Could not load flash deal.",
       );
     } finally {
-      setLoading(false);
+      if (ticket === reloadTicketRef.current) {
+        setLoading(false);
+      }
     }
   }, [applyValuesToForm]);
 
   const startNewDraft = useCallback(() => {
+    reloadTicketRef.current += 1;
     setError(null);
     setSavedOk(false);
+    setLoading(false);
     applyValuesToForm(createEmptyFlashDealDraft());
     setEditingDealId(null);
     setMeta(null);
@@ -111,13 +120,15 @@ export function AdminFlashDealPageClient() {
       return;
     }
     if (!authReady || !roleReady) return;
-    if (!user || role !== "admin") {
+    if (!adminUid || role !== "admin") {
       setLoading(false);
       return;
     }
+    let cancelled = false;
     void (async () => {
       try {
         const rows = await listFlashDealsForAdmin();
+        if (cancelled) return;
         setDealList(rows);
         if (rows.length === 0) {
           await reloadDealFromFirestore(null);
@@ -127,11 +138,16 @@ export function AdminFlashDealPageClient() {
           await reloadDealFromFirestore(pick);
         }
       } catch {
-        setError("Could not load flash deals.");
-        setLoading(false);
+        if (!cancelled) {
+          setError("Could not load flash deals.");
+          setLoading(false);
+        }
       }
     })();
-  }, [authReady, roleReady, user, role, reloadDealFromFirestore]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, roleReady, adminUid, role, reloadDealFromFirestore]);
 
   function updateSnap(index: number, patch: Partial<FlashDealItinerarySnap>) {
     setItinerarySnaps((prev) => {
@@ -142,7 +158,7 @@ export function AdminFlashDealPageClient() {
   }
 
   function addSnap() {
-    setItinerarySnaps((prev) => [...prev, { ...DEFAULT_ITINERARY_SNAP }]);
+    setItinerarySnaps((prev) => [...prev, { ...EMPTY_ITINERARY_SNAP }]);
   }
 
   function removeSnap(index: number) {
@@ -161,7 +177,7 @@ export function AdminFlashDealPageClient() {
       const payload: FlashDealSettingsInput = {
         title: title.trim(),
         dealDate: dealDate.trim(),
-        disabled,
+        disabled: false,
         isFeatured,
         description,
         fixedTourStartDate,
@@ -265,17 +281,15 @@ export function AdminFlashDealPageClient() {
         >
           /flash-deal
         </Link>
-        . Older data at doc{" "}
-        <code className="rounded bg-stone-100 px-1 text-[11px]">current</code>{" "}
-        still shows if nothing is featured yet.
+        .
       </p>
 
       {loading ? (
         <p className="mt-6 text-sm text-stone-500">Loading settings…</p>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-8 space-y-6">
-          <div className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-            <label className="block min-w-[12rem] flex-1 text-sm text-stone-600">
+          <div className="rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4">
+            <label className="block min-w-[12rem] text-sm text-stone-600">
               Open deal
               <select
                 value={editingDealId ?? "__new__"}
@@ -298,124 +312,125 @@ export function AdminFlashDealPageClient() {
                 ))}
               </select>
             </label>
-            <button
-              type="button"
-              onClick={startNewDraft}
-              className="rounded-full border border-lagoon/40 px-4 py-2.5 text-sm font-semibold text-lagoon hover:bg-lagoon/10"
-            >
-              Clear form (new draft)
-            </button>
-            <p className="w-full text-xs text-stone-500">
-              Editing doc id:{" "}
-              <code className="rounded bg-white px-1">
-                {editingDealId ?? "(none yet — save to create)"}
-              </code>
-            </p>
           </div>
 
           <label className="block text-sm text-stone-600">
-            Title
+            Title <span className="text-red-600">*</span>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
-              placeholder="Exclusive Sri Lanka packages - limited slots"
+              placeholder="Campaign headline"
             />
           </label>
 
           <label className="block text-sm text-stone-600">
-            Deal date
+            Deal date <span className="text-red-600">*</span>
             <input
               type="date"
               value={dealDate}
               onChange={(e) => setDealDate(e.target.value)}
               required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
 
           <label className="block text-sm text-stone-600">
-            Description
+            Description <span className="text-red-600">*</span>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
+              required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm text-stone-600">
-              Fixed tour start date
+              Fixed tour start date <span className="text-red-600">*</span>
               <input
                 type="date"
                 value={fixedTourStartDate}
                 onChange={(e) => setFixedTourStartDate(e.target.value)}
                 required
+                aria-required="true"
                 className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
               />
             </label>
             <label className="block text-sm text-stone-600">
-              Fixed tour end date
+              Fixed tour end date <span className="text-red-600">*</span>
               <input
                 type="date"
                 value={fixedTourEndDate}
                 onChange={(e) => setFixedTourEndDate(e.target.value)}
                 required
+                aria-required="true"
                 className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
               />
             </label>
           </div>
 
           <label className="block text-sm text-stone-600">
-            Per person charge
+            Per person charge <span className="text-red-600">*</span>
             <textarea
               value={perPersonCharge}
               onChange={(e) => setPerPersonCharge(e.target.value)}
               rows={2}
+              required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
 
           <label className="block text-sm text-stone-600">
-            Group size
+            Group size <span className="text-red-600">*</span>
             <textarea
               value={groupSize}
               onChange={(e) => setGroupSize(e.target.value)}
               rows={2}
+              required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
 
           <label className="block text-sm text-stone-600">
-            Hotel level
+            Hotel level <span className="text-red-600">*</span>
             <textarea
               value={hotelLevel}
               onChange={(e) => setHotelLevel(e.target.value)}
               rows={2}
+              required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
 
           <label className="block text-sm text-stone-600">
-            Transport
+            Transport <span className="text-red-600">*</span>
             <textarea
               value={transport}
               onChange={(e) => setTransport(e.target.value)}
               rows={2}
+              required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
 
           <fieldset className="rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4">
             <legend className="text-sm font-semibold text-forest">
-              Itinerary snaps
+              Itinerary snaps <span className="text-red-600">*</span>
             </legend>
             <p className="mt-1 text-xs text-stone-500">
-              Each tile has a title and description. Add more for extra
-              itinerary highlights.
+              Each tile must have a title and description (required). Add more
+              for extra itinerary highlights.
             </p>
             <div className="mt-4 space-y-6">
               {itinerarySnaps.map((snap, index) => (
@@ -438,24 +453,28 @@ export function AdminFlashDealPageClient() {
                     ) : null}
                   </div>
                   <label className="mt-3 block text-sm text-stone-600">
-                    Tile title
+                    Tile title <span className="text-red-600">*</span>
                     <input
                       type="text"
                       value={snap.title}
                       onChange={(e) =>
                         updateSnap(index, { title: e.target.value })
                       }
+                      required
+                      aria-required="true"
                       className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                     />
                   </label>
                   <label className="mt-3 block text-sm text-stone-600">
-                    Description
+                    Description <span className="text-red-600">*</span>
                     <textarea
                       value={snap.description}
                       onChange={(e) =>
                         updateSnap(index, { description: e.target.value })
                       }
                       rows={3}
+                      required
+                      aria-required="true"
                       className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
                     />
                   </label>
@@ -472,11 +491,13 @@ export function AdminFlashDealPageClient() {
           </fieldset>
 
           <label className="block text-sm text-stone-600">
-            Registration price
+            Registration price <span className="text-red-600">*</span>
             <textarea
               value={registrationPrice}
               onChange={(e) => setRegistrationPrice(e.target.value)}
               rows={2}
+              required
+              aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
           </label>
@@ -487,15 +508,22 @@ export function AdminFlashDealPageClient() {
                 Featured on homepage &amp; /flash-deal
               </p>
               <p className="mt-1 text-xs text-stone-500">
-                Only one deal should be featured — saving turns this on here and
-                clears it on other campaigns.
+                When on, this campaign appears on the homepage banner and{" "}
+                <Link
+                  href="/flash-deal"
+                  className="font-semibold text-lagoon underline-offset-2 hover:underline"
+                >
+                  /flash-deal
+                </Link>
+                . When off, visitors see no flash deal there. Only one campaign can
+                be featured — saving turns this on here and clears it on others.
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={isFeatured}
-              aria-label="Featured flash deal for homepage and detail page"
+              aria-label="Show this campaign on the homepage banner and flash-deal page"
               onClick={() => setIsFeatured((v) => !v)}
               className={cn(
                 "relative inline-flex h-9 w-[3.25rem] shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
@@ -506,37 +534,6 @@ export function AdminFlashDealPageClient() {
                 className={cn(
                   "pointer-events-none inline-block h-8 w-8 translate-x-0 rounded-full bg-white shadow ring-0 transition",
                   !isFeatured ? "translate-x-[0.125rem]" : "translate-x-[1.35rem]",
-                )}
-              />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-forest">
-                Enable flash deal
-              </p>
-              <p className="mt-1 text-xs text-stone-500">
-                When on, this campaign can appear publicly (if featured or via
-                legacy <code className="rounded bg-white px-1">current</code>
-                ). Turn off to hide it from visitors even when featured.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={!disabled}
-              aria-label="Enable flash deal content"
-              onClick={() => setDisabled((v) => !v)}
-              className={cn(
-                "relative inline-flex h-9 w-[3.25rem] shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
-                disabled ? "bg-stone-400" : "bg-forest",
-              )}
-            >
-              <span
-                className={cn(
-                  "pointer-events-none inline-block h-8 w-8 translate-x-0 rounded-full bg-white shadow ring-0 transition",
-                  disabled ? "translate-x-[0.125rem]" : "translate-x-[1.35rem]",
                 )}
               />
             </button>

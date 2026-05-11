@@ -64,13 +64,6 @@ export function FlashDealCampaignBookings({
         <h2 className="font-serif text-lg font-semibold text-forest">
           Travellers who booked this flash deal
         </h2>
-        <p className="mt-1 text-xs text-stone-600">
-          Documents under{" "}
-          <code className="rounded bg-stone-100 px-1 text-[11px]">
-            flashDeals/&#123;campaign id&#125;/Travellers/&#123;uid&#125;
-          </code>
-          .
-        </p>
       </div>
 
       {!campaignId || campaignId.trim() === "" ? (

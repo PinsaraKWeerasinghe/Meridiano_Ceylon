@@ -20,10 +20,6 @@ export default function AdminFlashDealPage() {
         <h1 className="mt-6 font-serif text-3xl font-semibold text-forest sm:text-4xl">
           Flash deal
         </h1>
-        <p className="mt-2 text-sm text-stone-600">
-          Title, deal date, and visibility. Updates sync to the banner on the
-          homepage.
-        </p>
         <div className="mt-10">
           <AdminFlashDealPageClient />
         </div>

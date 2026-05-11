@@ -37,6 +37,16 @@ function formatPricePpDisplay(raw: string): string {
   return s;
 }
 
+/** Empty CMS value on the public page */
+function emptyCell(): string {
+  return "—";
+}
+
+function displayDetailText(raw: string): string {
+  const s = raw.trim();
+  return s.length > 0 ? s : emptyCell();
+}
+
 function DetailSection({
   heading,
   children,
@@ -80,7 +90,15 @@ export function FlashDealDetailPageClient() {
   }, []);
 
   async function handleBookNow() {
-    if (!user?.uid || !dealDocId || !detail) return;
+    if (
+      !user?.uid ||
+      !dealDocId ||
+      !detail ||
+      !detail.title.trim() ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(detail.dealDate)
+    ) {
+      return;
+    }
     setBookingError(null);
     setBookingOk(false);
     setBooking(true);
@@ -159,40 +177,45 @@ export function FlashDealDetailPageClient() {
 
   if (!detail) {
     return (
-      <Card className={cn("p-8", packagesGreenCard)}>
-        <p className="text-sm font-semibold text-forest">Offer unavailable</p>
-        <p className="mt-2 text-sm text-stone-600">
-          This flash deal is disabled or has not been published yet.
-        </p>
-        <Link
-          href="/"
-          className="mt-6 inline-block text-sm font-semibold text-lagoon underline-offset-4 hover:underline"
-        >
-          Back to home
-        </Link>
-      </Card>
+      <p className="sr-only" aria-live="polite">
+        No flash deal is featured.
+      </p>
     );
   }
 
-  const dateLabel = formatDealDateLabel(detail.dealDate);
+  const bookingReady =
+    Boolean(detail.title.trim()) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(detail.dealDate);
+
+  const dateLabel = detail.dealDate
+    ? formatDealDateLabel(detail.dealDate)
+    : emptyCell();
   const loginHref = `/login?next=${encodeURIComponent(FLASH_DEAL_DETAIL_PATH)}`;
 
   return (
     <div className="space-y-10">
       <header className="space-y-3">
         <h1 className="font-serif text-3xl font-semibold text-forest sm:text-4xl">
-          {detail.title}
+          {detail.title.trim() ? detail.title : emptyCell()}
         </h1>
         <p className="text-sm text-stone-600">
           <span className="font-semibold text-forest">Deal date:</span>{" "}
-          <time dateTime={detail.dealDate}>{dateLabel}</time>
+          {detail.dealDate ? (
+            <time dateTime={detail.dealDate}>{dateLabel}</time>
+          ) : (
+            <span className="text-stone-500">{emptyCell()}</span>
+          )}
         </p>
       </header>
 
       <Card className={cn("space-y-8 p-6 sm:p-8", packagesGreenCard)}>
         {detail.description.trim() ? (
           <div className={detailValueClass}>{detail.description}</div>
-        ) : null}
+        ) : (
+          <div className={cn(detailValueClass, "text-stone-400")}>
+            {emptyCell()}
+          </div>
+        )}
 
         <DetailSection heading="Fixed tour dates">
           {detail.fixedTourStartDate && detail.fixedTourEndDate ? (
@@ -208,7 +231,7 @@ export function FlashDealDetailPageClient() {
               </time>
             </p>
           ) : (
-            <p>Tour dates will be published soon.</p>
+            <p className="text-stone-400">{emptyCell()}</p>
           )}
         </DetailSection>
 
@@ -226,7 +249,7 @@ export function FlashDealDetailPageClient() {
               Group size
             </dt>
             <dd className={cn("mt-2", detailValueClass)}>
-              {detail.groupSize}
+              {displayDetailText(detail.groupSize)}
             </dd>
           </div>
           <div>
@@ -234,7 +257,7 @@ export function FlashDealDetailPageClient() {
               Hotel level
             </dt>
             <dd className={cn("mt-2", detailValueClass)}>
-              {detail.hotelLevel}
+              {displayDetailText(detail.hotelLevel)}
             </dd>
           </div>
           <div>
@@ -242,7 +265,7 @@ export function FlashDealDetailPageClient() {
               Transport
             </dt>
             <dd className={cn("mt-2", detailValueClass)}>
-              {detail.transport}
+              {displayDetailText(detail.transport)}
             </dd>
           </div>
         </dl>
@@ -252,27 +275,26 @@ export function FlashDealDetailPageClient() {
             Itinerary snaps
           </h2>
           <ul className="grid gap-4 sm:grid-cols-2">
-            {detail.itinerarySnaps.map((snap, index) => (
-              <li
-                key={`${snap.title}-${index}`}
-                className="rounded-xl border border-lagoon/25 bg-white/60 p-4 shadow-sm"
-              >
-                <p className={cn("font-semibold text-forest", detailValueClass)}>
-                  {snap.title}
-                </p>
-                <p className={cn("mt-2", detailValueClass)}>{snap.description}</p>
+            {detail.itinerarySnaps.length === 0 ? (
+              <li className={cn("text-stone-500 sm:col-span-2", detailValueClass)}>
+                {emptyCell()}
               </li>
-            ))}
+            ) : (
+              detail.itinerarySnaps.map((snap, index) => (
+                <li
+                  key={`snap-${index}-${snap.title.slice(0, 24)}`}
+                  className="rounded-xl border border-lagoon/25 bg-white/60 p-4 shadow-sm"
+                >
+                  <p className={cn("font-semibold text-forest", detailValueClass)}>
+                    {displayDetailText(snap.title)}
+                  </p>
+                  <p className={cn("mt-2", detailValueClass)}>
+                    {displayDetailText(snap.description)}
+                  </p>
+                </li>
+              ))
+            )}
           </ul>
-        </section>
-
-        <section className="space-y-2 border-t border-lagoon/20 pt-8">
-          <h2 className="font-serif text-lg font-semibold text-forest">
-            Registration price
-          </h2>
-          <p className={detailValueClass}>
-            {formatPricePpDisplay(detail.registrationPrice)}
-          </p>
         </section>
       </Card>
 
@@ -293,24 +315,89 @@ export function FlashDealDetailPageClient() {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-stone-600">
-              Book now saves your profile under{" "}
-              <code className="rounded bg-stone-100 px-1 text-[11px]">
-                flashDeals/{dealDocId?.slice(0, 12) ?? "…"}…/Travellers/&#123;your
-                uid&#125;
-              </code>
-              . Complete{" "}
-              <Link
-                href="/profile"
-                className="font-semibold text-lagoon underline-offset-2 hover:underline"
-              >
-                your profile
-              </Link>{" "}
-              (name, passport, phone, gender) first.
-            </p>
+            {bookingReady ? (
+              <fieldset>
+                <legend className="text-sm font-semibold text-forest">
+                  Booking summary
+                </legend>
+                <p className="mt-1 text-xs text-stone-500">
+                  Figures below come from this flash-deal campaign. Meridiano
+                  confirms the final amount before payment.
+                </p>
+                <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm text-stone-800">
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-stone-600">
+                      Travellers in this booking:{" "}
+                      <span className="tabular-nums text-forest">1</span>
+                      <span className="text-stone-500">
+                        {" "}
+                        (lead traveller from your profile)
+                      </span>
+                    </p>
+
+                    <div className="flex justify-between gap-4 border-b border-stone-200 pb-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-forest">{detail.title}</p>
+                        <p className="mt-0.5 text-xs text-stone-500">
+                          Flash deal
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-xs text-stone-500">Deal date</p>
+                        <p className="font-semibold tabular-nums text-forest">
+                          <time dateTime={detail.dealDate}>{dateLabel}</time>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between gap-4 border-b border-stone-200 pb-3">
+                      <span className="text-stone-700">Tour window</span>
+                      <span className="shrink-0 text-right text-stone-800">
+                        {detail.fixedTourStartDate &&
+                        detail.fixedTourEndDate ? (
+                          <>
+                            <time dateTime={detail.fixedTourStartDate}>
+                              {formatDealDateLabel(detail.fixedTourStartDate)}
+                            </time>
+                            <span aria-hidden className="mx-1 text-stone-400">
+                              —
+                            </span>
+                            <time dateTime={detail.fixedTourEndDate}>
+                              {formatDealDateLabel(detail.fixedTourEndDate)}
+                            </time>
+                          </>
+                        ) : (
+                          emptyCell()
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between gap-4 border-b border-stone-200 pb-3">
+                      <span className="text-stone-700">Per person charge</span>
+                      <span className="shrink-0 text-right font-medium text-forest">
+                        {formatPricePpDisplay(detail.perPersonCharge)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between gap-4">
+                      <span className="text-stone-700">Registration price</span>
+                      <span className="shrink-0 text-right font-medium text-forest">
+                        {formatPricePpDisplay(detail.registrationPrice)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+            ) : null}
+            {!bookingReady ? (
+              <p className="text-xs text-amber-800">
+                Booking opens once this campaign has a title and deal date in
+                admin.
+              </p>
+            ) : null}
             <button
               type="button"
-              disabled={booking || !dealDocId}
+              disabled={booking || !dealDocId || !bookingReady}
               onClick={() => void handleBookNow()}
               className="inline-flex min-w-[180px] items-center justify-center rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349] disabled:opacity-50"
             >

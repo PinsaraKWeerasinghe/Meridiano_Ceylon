@@ -9,7 +9,6 @@ import {
   serverTimestamp,
   where,
   writeBatch,
-  type DocumentSnapshot,
   type QuerySnapshot,
   type Timestamp,
   type Unsubscribe,
@@ -21,8 +20,9 @@ import { getFirestoreDb } from "@/lib/firebase/db";
 export const FLASH_DEALS_COLLECTION = "flashDeals";
 
 /**
- * Legacy singleton doc id — used as banner/detail **fallback** when no deal has
- * `isFeatured: true`. Traveller confirmations still use each campaign’s real doc id.
+ * Historical singleton doc id (`flashDeals/current`). Public banner and `/flash-deal`
+ * only use campaigns with `isFeatured: true`. Traveller confirmations use each
+ * campaign’s stored doc id.
  */
 export const FLASH_DEAL_LEGACY_DOC_ID = "current";
 
@@ -85,6 +85,12 @@ export const DEFAULT_ITINERARY_SNAP: FlashDealItinerarySnap = {
     "Describe this stage of the journey — route, experiences, or pacing.",
 };
 
+/** Blank tile for new admin drafts and “+ Add itinerary snap”. */
+export const EMPTY_ITINERARY_SNAP: FlashDealItinerarySnap = {
+  title: "",
+  description: "",
+};
+
 function normalizeItinerarySnaps(value: unknown): FlashDealItinerarySnap[] {
   if (!Array.isArray(value)) return [{ ...DEFAULT_ITINERARY_SNAP }];
   const out: FlashDealItinerarySnap[] = [];
@@ -106,13 +112,10 @@ function normalizeItinerarySnaps(value: unknown): FlashDealItinerarySnap[] {
 export function sanitizeItinerarySnapsForSave(
   snaps: FlashDealItinerarySnap[],
 ): FlashDealItinerarySnap[] {
-  const cleaned = snaps
-    .map((s) => ({
-      title: s.title.trim(),
-      description: s.description.trim(),
-    }))
-    .filter((s) => s.title.length > 0 || s.description.length > 0);
-  return cleaned.length > 0 ? cleaned : [{ ...DEFAULT_ITINERARY_SNAP }];
+  return snaps.map((s) => ({
+    title: s.title.trim(),
+    description: s.description.trim(),
+  }));
 }
 
 function strField(data: Record<string, unknown>, key: string): string {
@@ -181,6 +184,55 @@ export function parseFlashDealForDetailPage(
   };
 }
 
+/** Snaps for `/flash-deal`: real rows only — no placeholder tile when empty. */
+function normalizeItinerarySnapsForPublicDetailView(
+  value: unknown,
+): FlashDealItinerarySnap[] {
+  if (!Array.isArray(value)) return [];
+  const out: FlashDealItinerarySnap[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const title = typeof o.title === "string" ? o.title.trim() : "";
+    const description =
+      typeof o.description === "string" ? o.description.trim() : "";
+    if (!title && !description) continue;
+    out.push({ title, description });
+  }
+  return out;
+}
+
+/**
+ * Full `/flash-deal` body: includes drafts (empty title/date allowed). Disabled
+ * docs are hidden. Banner still uses {@link parseFlashDealForBar} (requires
+ * title + valid deal date).
+ */
+export function parseFlashDealForPublicDetailView(
+  data: Record<string, unknown>,
+): FlashDealDetailContent | null {
+  if (data.disabled === true) return null;
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  const dealDateRaw =
+    typeof data.dealDate === "string" ? data.dealDate.trim() : "";
+  const dealDate = /^\d{4}-\d{2}-\d{2}$/.test(dealDateRaw) ? dealDateRaw : "";
+
+  return {
+    title,
+    dealDate,
+    description: strField(data, "description"),
+    fixedTourStartDate: isoDateOrEmpty(data, "fixedTourStartDate"),
+    fixedTourEndDate: isoDateOrEmpty(data, "fixedTourEndDate"),
+    perPersonCharge: strField(data, "perPersonCharge"),
+    groupSize: strField(data, "groupSize"),
+    hotelLevel: strField(data, "hotelLevel"),
+    transport: strField(data, "transport"),
+    itinerarySnaps: normalizeItinerarySnapsForPublicDetailView(
+      data.itinerarySnaps,
+    ),
+    registrationPrice: strField(data, "registrationPrice"),
+  };
+}
+
 export type FlashDealAdminMeta = {
   createdByUid: string;
   createdByEmail: string | null;
@@ -234,7 +286,21 @@ function docSortMs(data: Record<string, unknown>): number {
 }
 
 export function createEmptyFlashDealDraft(): FlashDealSettingsInput {
-  return { ...DEFAULT_FLASH_DEAL_FORM };
+  return {
+    title: "",
+    dealDate: "",
+    disabled: false,
+    isFeatured: false,
+    description: "",
+    fixedTourStartDate: "",
+    fixedTourEndDate: "",
+    perPersonCharge: "",
+    groupSize: "",
+    hotelLevel: "",
+    transport: "",
+    itinerarySnaps: [{ ...EMPTY_ITINERARY_SNAP }],
+    registrationPrice: "",
+  };
 }
 
 export async function listFlashDealsForAdmin(): Promise<FlashDealListRow[]> {
@@ -278,15 +344,11 @@ function pickBestFromFeaturedQuery<T>(
   return best?.value ?? null;
 }
 
-function subscribeFeaturedOrLegacyFlashDeal<T>(
+function subscribeFeaturedFlashDeal<T>(
   parse: (data: Record<string, unknown>) => T | null,
   onValue: (value: T | null) => void,
 ): Unsubscribe {
   const db = getFirestoreDb();
-  let fromFeatured: T | null = null;
-  let fromLegacy: T | null = null;
-
-  const emit = () => onValue(fromFeatured ?? fromLegacy);
 
   const unsubFeatured = onSnapshot(
     query(
@@ -295,31 +357,15 @@ function subscribeFeaturedOrLegacyFlashDeal<T>(
       limit(25),
     ),
     (qSnap) => {
-      fromFeatured = pickBestFromFeaturedQuery(qSnap, parse);
-      emit();
+      onValue(pickBestFromFeaturedQuery(qSnap, parse));
     },
     () => {
-      fromFeatured = null;
-      emit();
-    },
-  );
-
-  const unsubLegacy = onSnapshot(
-    doc(db, FLASH_DEALS_COLLECTION, FLASH_DEAL_LEGACY_DOC_ID),
-    (dSnap: DocumentSnapshot) => {
-      if (!dSnap.exists()) fromLegacy = null;
-      else fromLegacy = parse(dSnap.data() as Record<string, unknown>);
-      emit();
-    },
-    () => {
-      fromLegacy = null;
-      emit();
+      onValue(null);
     },
   );
 
   return () => {
     unsubFeatured();
-    unsubLegacy();
   };
 }
 
@@ -332,7 +378,7 @@ export async function loadFlashDealForAdminPage(
 }> {
   if (!dealId || dealId.trim() === "") {
     return {
-      values: { ...DEFAULT_FLASH_DEAL_FORM },
+      values: createEmptyFlashDealDraft(),
       meta: null,
       dealId: null,
     };
@@ -434,7 +480,41 @@ export async function saveFlashDealSettings(
     throw new Error("Fixed tour start date must be on or before the end date.");
   }
 
-  const snaps = sanitizeItinerarySnapsForSave(input.itinerarySnaps);
+  if (!input.description.trim()) {
+    throw new Error("Description is required.");
+  }
+  if (!input.perPersonCharge.trim()) {
+    throw new Error("Per person charge is required.");
+  }
+  if (!input.groupSize.trim()) {
+    throw new Error("Group size is required.");
+  }
+  if (!input.hotelLevel.trim()) {
+    throw new Error("Hotel level is required.");
+  }
+  if (!input.transport.trim()) {
+    throw new Error("Transport is required.");
+  }
+  if (!input.registrationPrice.trim()) {
+    throw new Error("Registration price is required.");
+  }
+
+  const snapsRaw = sanitizeItinerarySnapsForSave(input.itinerarySnaps);
+  const snaps = snapsRaw.filter(
+    (s) => s.title.length > 0 || s.description.length > 0,
+  );
+  if (snaps.length === 0) {
+    throw new Error(
+      "Add at least one itinerary snap with a title and description.",
+    );
+  }
+  for (const s of snaps) {
+    if (!s.title.length || !s.description.length) {
+      throw new Error(
+        "Each itinerary snap must have both a title and a description.",
+      );
+    }
+  }
 
   const detailPayload = {
     title,
@@ -511,7 +591,7 @@ function pickBestFeaturedDealDetail(
     null;
   for (const d of snap.docs) {
     const data = d.data() as Record<string, unknown>;
-    const detail = parseFlashDealForDetailPage(data);
+    const detail = parseFlashDealForPublicDetailView(data);
     if (!detail) continue;
     const ms = docSortMs(data);
     if (!best || ms >= best.ms)
@@ -521,17 +601,13 @@ function pickBestFeaturedDealDetail(
 }
 
 /**
- * Resolved featured campaign + parsed detail for `/flash-deal`. Fallback: legacy
- * {@link FLASH_DEAL_LEGACY_DOC_ID} doc when nothing featured parses as public.
+ * Resolved featured campaign + parsed detail for `/flash-deal`.
+ * Only deals with `isFeatured == true` are considered; otherwise `null`.
  */
 export function subscribeFlashDealPublic(
   onValue: (value: FlashDealPublicResolved | null) => void,
 ): Unsubscribe {
   const db = getFirestoreDb();
-  let featured: FlashDealPublicResolved | null = null;
-  let legacy: FlashDealPublicResolved | null = null;
-
-  const emit = () => onValue(featured ?? legacy);
 
   const unsubFeatured = onSnapshot(
     query(
@@ -540,43 +616,22 @@ export function subscribeFlashDealPublic(
       limit(25),
     ),
     (qSnap) => {
-      featured = pickBestFeaturedDealDetail(qSnap);
-      emit();
+      onValue(pickBestFeaturedDealDetail(qSnap));
     },
     () => {
-      featured = null;
-      emit();
-    },
-  );
-
-  const unsubLegacy = onSnapshot(
-    doc(db, FLASH_DEALS_COLLECTION, FLASH_DEAL_LEGACY_DOC_ID),
-    (dSnap: DocumentSnapshot) => {
-      if (!dSnap.exists()) legacy = null;
-      else {
-        const detail = parseFlashDealForDetailPage(
-          dSnap.data() as Record<string, unknown>,
-        );
-        legacy = detail ? { dealDocId: dSnap.id, detail } : null;
-      }
-      emit();
-    },
-    () => {
-      legacy = null;
-      emit();
+      onValue(null);
     },
   );
 
   return () => {
     unsubFeatured();
-    unsubLegacy();
   };
 }
 
 export function subscribeFlashDealSettingsForBar(
   onConfig: (config: FlashDealBarConfig | null) => void,
 ): Unsubscribe {
-  return subscribeFeaturedOrLegacyFlashDeal(parseFlashDealForBar, onConfig);
+  return subscribeFeaturedFlashDeal(parseFlashDealForBar, onConfig);
 }
 
 export function subscribeFlashDealDetailPage(
