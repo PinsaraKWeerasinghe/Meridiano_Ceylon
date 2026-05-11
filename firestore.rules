@@ -17,15 +17,19 @@ service cloud.firestore {
                          (request.auth.uid == userId || isAdmin());
     }
 
-    // Flash-deal booking confirmations (same doc id as flashDeals/{campaignId})
-    match /users/{userId}/flashDeals/{flashDealCampaignId} {
+    /**
+     * Flash-deal traveller confirmations under each campaign.
+     * Path: flashDeals/{dealId}/Travellers/{travellerUid}
+     * Doc id = traveller Auth uid; flashDealDocId in data must match dealId.
+     */
+    match /flashDeals/{dealId}/Travellers/{travellerUid} {
       allow read: if request.auth != null &&
-                  (request.auth.uid == userId || isAdmin());
+                  (request.auth.uid == travellerUid || isAdmin());
 
       allow create, update: if request.auth != null
-        && request.auth.uid == userId
-        && flashDealCampaignId == request.resource.data.flashDealDocId
-        && exists(/databases/$(database)/documents/flashDeals/$(flashDealCampaignId))
+        && request.auth.uid == travellerUid
+        && dealId == request.resource.data.flashDealDocId
+        && exists(/databases/$(database)/documents/flashDeals/$(dealId))
         && request.resource.data.keys().hasOnly([
           'flashDealDocId', 'packageSlug', 'packageTitle', 'primaryName',
           'primaryPassport', 'primaryGender', 'partners', 'phone',
@@ -52,7 +56,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Flash Deal Settings collection
+    // Flash deal campaigns (CMS document only — not subcollections)
     match /flashDeals/{docId} {
 
       // Any user can read flash deals

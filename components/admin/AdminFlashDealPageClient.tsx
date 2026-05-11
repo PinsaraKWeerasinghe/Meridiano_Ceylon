@@ -20,6 +20,7 @@ import {
   type FlashDealSettingsInput,
 } from "@/lib/flash-deal-settings";
 import { ROLE_LABEL, type UserRole } from "@/lib/user-profile";
+import { FlashDealCampaignBookings } from "@/components/admin/FlashDealCampaignBookings";
 
 function formatDateTime(value: Date): string {
   return value.toLocaleString(undefined, {
@@ -248,6 +249,7 @@ export function AdminFlashDealPageClient() {
   }
 
   return (
+    <>
     <Card className="border-lagoon/25 p-6 shadow-sm shadow-lagoon/10 sm:p-8">
       <p className="text-sm text-stone-600">
         Campaigns live in{" "}
@@ -599,5 +601,7 @@ export function AdminFlashDealPageClient() {
         </form>
       )}
     </Card>
+    <FlashDealCampaignBookings campaignId={editingDealId} />
+    </>
   );
 }

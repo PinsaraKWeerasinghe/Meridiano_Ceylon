@@ -294,11 +294,10 @@ export function FlashDealDetailPageClient() {
         ) : (
           <div className="space-y-3">
             <p className="text-xs text-stone-600">
-              Book now saves your profile details to this flash deal under{" "}
+              Book now saves your profile under{" "}
               <code className="rounded bg-stone-100 px-1 text-[11px]">
-                users/&#123;your uid&#125;/flashDeals/&#123;
-                {dealDocId?.slice(0, 12) ?? "…"}
-                …&#125;
+                flashDeals/{dealDocId?.slice(0, 12) ?? "…"}…/Travellers/&#123;your
+                uid&#125;
               </code>
               . Complete{" "}
               <Link

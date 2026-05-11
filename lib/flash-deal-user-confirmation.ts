@@ -1,12 +1,13 @@
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirestoreDb } from "@/lib/firebase/db";
+import { FLASH_DEALS_COLLECTION } from "@/lib/flash-deal-settings";
 import type { PackageBookingPartner } from "@/utils/whatsapp";
 
-/** Traveller confirmations: `users/{uid}/flashDeals/{flashDealDocId}` */
-export const USER_FLASH_DEALS_CONFIRMATIONS_SUBCOLLECTION = "flashDeals";
+/** Traveller confirmations: `flashDeals/{campaignId}/Travellers/{uid}` */
+export const FLASH_DEAL_TRAVELLERS_SUBCOLLECTION = "Travellers";
 
 export type SaveUserFlashDealConfirmationPayload = {
-  /** Must match Firestore doc id and `flashDeals/{flashDealDocId}` campaign doc. */
+  /** Must match parent campaign doc id `flashDeals/{flashDealDocId}`. */
   flashDealDocId: string;
   packageSlug: string;
   packageTitle: string;
@@ -22,7 +23,7 @@ export type SaveUserFlashDealConfirmationPayload = {
 };
 
 /**
- * Persist flash-deal confirmation under the signed-in traveller (`request.auth.uid == userId`).
+ * Persist flash-deal confirmation under the campaign (`request.auth.uid == uid`).
  * Requires `flashDeals/{flashDealDocId}` to exist (see Firestore rules).
  */
 export async function saveUserFlashDealConfirmation(
@@ -35,10 +36,10 @@ export async function saveUserFlashDealConfirmation(
 
   const ref = doc(
     db,
-    "users",
-    uid,
-    USER_FLASH_DEALS_CONFIRMATIONS_SUBCOLLECTION,
+    FLASH_DEALS_COLLECTION,
     campaignId,
+    FLASH_DEAL_TRAVELLERS_SUBCOLLECTION,
+    uid,
   );
 
   const data = {
