@@ -17,11 +17,51 @@ service cloud.firestore {
                          (request.auth.uid == userId || isAdmin());
     }
 
-    /**
-     * Flash-deal traveller confirmations under each campaign.
-     * Path: flashDeals/{dealId}/Travellers/{travellerUid}
-     * Doc id = traveller Auth uid; flashDealDocId in data must match dealId.
-     */
+    // Flash-deal booking confirmations (same doc id as flashDeals/{campaignId})
+    match /users/{userId}/flashDeals/{flashDealCampaignId} {
+      allow read: if request.auth != null &&
+                  (request.auth.uid == userId || isAdmin());
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && flashDealCampaignId == request.resource.data.flashDealDocId
+        && exists(/databases/$(database)/documents/flashDeals/$(flashDealCampaignId))
+        && request.resource.data.keys().hasOnly([
+          'flashDealDocId', 'packageSlug', 'packageTitle', 'primaryName',
+          'primaryPassport', 'primaryGender', 'partners', 'phone',
+          'addonTitles', 'notes', 'estimatedBillLines', 'submitterEmail',
+          'submittedAt'
+        ])
+        && request.resource.data.packageSlug is string
+        && request.resource.data.packageTitle is string
+        && request.resource.data.primaryName is string
+        && request.resource.data.primaryPassport is string
+        && request.resource.data.primaryGender is string
+        && (request.resource.data.primaryGender == 'male'
+          || request.resource.data.primaryGender == 'female')
+        && request.resource.data.partners is list
+        && request.resource.data.partners.size() <= 30
+        && request.resource.data.phone is string
+        && request.resource.data.addonTitles is list
+        && request.resource.data.notes is string
+        && request.resource.data.estimatedBillLines is list
+        && request.resource.data.submittedAt is timestamp
+        && (request.resource.data.submitterEmail == null
+          || request.resource.data.submitterEmail is string);
+
+      allow delete: if false;
+    }
+
+    // Flash Deal Settings collection
+    match /flashDeals/{docId} {
+
+      // Any user can read flash deals
+      allow read: if true;
+
+      // Only admin can write
+      allow write: if isAdmin();
+    }
+    
     match /flashDeals/{dealId}/Travellers/{travellerUid} {
       allow read: if request.auth != null &&
                   (request.auth.uid == travellerUid || isAdmin());
@@ -55,15 +95,6 @@ service cloud.firestore {
 
       allow delete: if false;
     }
-
-    // Flash deal campaigns (CMS document only — not subcollections)
-    match /flashDeals/{docId} {
-
-      // Any user can read flash deals
-      allow read: if true;
-
-      // Only admin can write
-      allow write: if isAdmin();
-    }
+    
   }
 }
