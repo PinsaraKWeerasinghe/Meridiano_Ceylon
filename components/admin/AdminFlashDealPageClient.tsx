@@ -8,11 +8,15 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import {
+  createEmptyFlashDealDraft,
   DEFAULT_ITINERARY_SNAP,
+  FLASH_DEALS_COLLECTION,
+  listFlashDealsForAdmin,
   loadFlashDealForAdminPage,
   saveFlashDealSettings,
   type FlashDealAdminMeta,
   type FlashDealItinerarySnap,
+  type FlashDealListRow,
   type FlashDealSettingsInput,
 } from "@/lib/flash-deal-settings";
 import { ROLE_LABEL, type UserRole } from "@/lib/user-profile";
@@ -31,6 +35,7 @@ export function AdminFlashDealPageClient() {
   const [title, setTitle] = useState("");
   const [dealDate, setDealDate] = useState("");
   const [disabled, setDisabled] = useState(false);
+  const [isFeatured, setIsFeatured] = useState(false);
   const [description, setDescription] = useState("");
   const [fixedTourStartDate, setFixedTourStartDate] = useState("");
   const [fixedTourEndDate, setFixedTourEndDate] = useState("");
@@ -44,41 +49,60 @@ export function AdminFlashDealPageClient() {
   >([{ ...DEFAULT_ITINERARY_SNAP }]);
 
   const [meta, setMeta] = useState<FlashDealAdminMeta | null>(null);
+  /** `null` = new unsaved draft (next save allocates a Firestore doc id). */
+  const [editingDealId, setEditingDealId] = useState<string | null>(null);
+  const [dealList, setDealList] = useState<FlashDealListRow[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedOk, setSavedOk] = useState(false);
 
-  const load = useCallback(async () => {
+  const applyValuesToForm = useCallback((values: FlashDealSettingsInput) => {
+    setTitle(values.title);
+    setDealDate(values.dealDate);
+    setDisabled(values.disabled);
+    setIsFeatured(values.isFeatured);
+    setDescription(values.description);
+    setFixedTourStartDate(values.fixedTourStartDate);
+    setFixedTourEndDate(values.fixedTourEndDate);
+    setPerPersonCharge(values.perPersonCharge);
+    setGroupSize(values.groupSize);
+    setHotelLevel(values.hotelLevel);
+    setTransport(values.transport);
+    setRegistrationPrice(values.registrationPrice);
+    setItinerarySnaps(
+      values.itinerarySnaps.length > 0
+        ? values.itinerarySnaps.map((s) => ({ ...s }))
+        : [{ ...DEFAULT_ITINERARY_SNAP }],
+    );
+  }, []);
+
+  const reloadDealFromFirestore = useCallback(async (dealId: string | null) => {
     setError(null);
     setSavedOk(false);
     setLoading(true);
     try {
-      const { values, meta: m } = await loadFlashDealForAdminPage();
-      setTitle(values.title);
-      setDealDate(values.dealDate);
-      setDisabled(values.disabled);
-      setDescription(values.description);
-      setFixedTourStartDate(values.fixedTourStartDate);
-      setFixedTourEndDate(values.fixedTourEndDate);
-      setPerPersonCharge(values.perPersonCharge);
-      setGroupSize(values.groupSize);
-      setHotelLevel(values.hotelLevel);
-      setTransport(values.transport);
-      setRegistrationPrice(values.registrationPrice);
-      setItinerarySnaps(
-        values.itinerarySnaps.length > 0
-          ? values.itinerarySnaps.map((s) => ({ ...s }))
-          : [{ ...DEFAULT_ITINERARY_SNAP }],
+      const result = await loadFlashDealForAdminPage(dealId);
+      setEditingDealId(result.dealId);
+      applyValuesToForm(result.values);
+      setMeta(result.meta);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not load flash deal.",
       );
-      setMeta(m);
-    } catch {
-      setError("Could not load flash deal settings.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyValuesToForm]);
+
+  const startNewDraft = useCallback(() => {
+    setError(null);
+    setSavedOk(false);
+    applyValuesToForm(createEmptyFlashDealDraft());
+    setEditingDealId(null);
+    setMeta(null);
+  }, [applyValuesToForm]);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -90,8 +114,23 @@ export function AdminFlashDealPageClient() {
       setLoading(false);
       return;
     }
-    void load();
-  }, [authReady, roleReady, user, role, load]);
+    void (async () => {
+      try {
+        const rows = await listFlashDealsForAdmin();
+        setDealList(rows);
+        if (rows.length === 0) {
+          await reloadDealFromFirestore(null);
+        } else {
+          const pick =
+            rows.find((r) => r.isFeatured)?.id ?? rows[0]?.id ?? null;
+          await reloadDealFromFirestore(pick);
+        }
+      } catch {
+        setError("Could not load flash deals.");
+        setLoading(false);
+      }
+    })();
+  }, [authReady, roleReady, user, role, reloadDealFromFirestore]);
 
   function updateSnap(index: number, patch: Partial<FlashDealItinerarySnap>) {
     setItinerarySnaps((prev) => {
@@ -122,6 +161,7 @@ export function AdminFlashDealPageClient() {
         title: title.trim(),
         dealDate: dealDate.trim(),
         disabled,
+        isFeatured,
         description,
         fixedTourStartDate,
         fixedTourEndDate,
@@ -132,9 +172,15 @@ export function AdminFlashDealPageClient() {
         registrationPrice,
         itinerarySnaps,
       };
-      await saveFlashDealSettings(user.uid, user.email ?? null, payload);
+      const { dealId } = await saveFlashDealSettings(
+        user.uid,
+        user.email ?? null,
+        editingDealId,
+        payload,
+      );
       setSavedOk(true);
-      await load();
+      setDealList(await listFlashDealsForAdmin());
+      await reloadDealFromFirestore(dealId);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not save. Try again.",
@@ -204,24 +250,67 @@ export function AdminFlashDealPageClient() {
   return (
     <Card className="border-lagoon/25 p-6 shadow-sm shadow-lagoon/10 sm:p-8">
       <p className="text-sm text-stone-600">
-        Stored in Firestore{" "}
+        Campaigns live in{" "}
         <code className="rounded bg-stone-100 px-1 text-xs">
-          flashDealSettings/current
+          {FLASH_DEALS_COLLECTION}
         </code>
-        . Banner and{" "}
+        . Mark one deal as{" "}
+        <strong className="text-forest">featured</strong> to drive the homepage
+        banner and{" "}
         <Link
           href="/flash-deal"
           className="font-semibold text-lagoon underline-offset-2 hover:underline"
         >
           /flash-deal
-        </Link>{" "}
-        read this in real time.
+        </Link>
+        . Older data at doc{" "}
+        <code className="rounded bg-stone-100 px-1 text-[11px]">current</code>{" "}
+        still shows if nothing is featured yet.
       </p>
 
       {loading ? (
         <p className="mt-6 text-sm text-stone-500">Loading settings…</p>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-8 space-y-6">
+          <div className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+            <label className="block min-w-[12rem] flex-1 text-sm text-stone-600">
+              Open deal
+              <select
+                value={editingDealId ?? "__new__"}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "__new__") startNewDraft();
+                  else void reloadDealFromFirestore(v);
+                }}
+                className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
+              >
+                <option value="__new__">New draft (unsaved)</option>
+                {dealList.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.title.length > 48
+                      ? `${row.title.slice(0, 48)}…`
+                      : row.title}{" "}
+                    {row.isFeatured ? "★" : ""}
+                    {row.disabled ? " (off)" : ""} ({row.id.slice(0, 8)}…)
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={startNewDraft}
+              className="rounded-full border border-lagoon/40 px-4 py-2.5 text-sm font-semibold text-lagoon hover:bg-lagoon/10"
+            >
+              Clear form (new draft)
+            </button>
+            <p className="w-full text-xs text-stone-500">
+              Editing doc id:{" "}
+              <code className="rounded bg-white px-1">
+                {editingDealId ?? "(none yet — save to create)"}
+              </code>
+            </p>
+          </div>
+
           <label className="block text-sm text-stone-600">
             Title
             <input
@@ -393,18 +482,49 @@ export function AdminFlashDealPageClient() {
           <div className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-forest">
+                Featured on homepage &amp; /flash-deal
+              </p>
+              <p className="mt-1 text-xs text-stone-500">
+                Only one deal should be featured — saving turns this on here and
+                clears it on other campaigns.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isFeatured}
+              aria-label="Featured flash deal for homepage and detail page"
+              onClick={() => setIsFeatured((v) => !v)}
+              className={cn(
+                "relative inline-flex h-9 w-[3.25rem] shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
+                !isFeatured ? "bg-stone-400" : "bg-forest",
+              )}
+            >
+              <span
+                className={cn(
+                  "pointer-events-none inline-block h-8 w-8 translate-x-0 rounded-full bg-white shadow ring-0 transition",
+                  !isFeatured ? "translate-x-[0.125rem]" : "translate-x-[1.35rem]",
+                )}
+              />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-forest">
                 Enable flash deal
               </p>
               <p className="mt-1 text-xs text-stone-500">
-                When on, the homepage banner and public detail page are visible
-                (until the deal date ends). Turn off to hide both from visitors.
+                When on, this campaign can appear publicly (if featured or via
+                legacy <code className="rounded bg-white px-1">current</code>
+                ). Turn off to hide it from visitors even when featured.
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={!disabled}
-              aria-label="Enable flash deal banner and detail page"
+              aria-label="Enable flash deal content"
               onClick={() => setDisabled((v) => !v)}
               className={cn(
                 "relative inline-flex h-9 w-[3.25rem] shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50",
@@ -448,9 +568,11 @@ export function AdminFlashDealPageClient() {
             </dl>
           ) : (
             <p className="text-xs text-stone-500">
-              No document yet — saving will create{" "}
-              <code className="rounded bg-stone-100 px-1">current</code> with
-              created / modified metadata.
+              New draft — saving creates a new{" "}
+              <code className="rounded bg-stone-100 px-1">
+                {FLASH_DEALS_COLLECTION}/&#123;auto-id&#125;
+              </code>{" "}
+              document with created / modified metadata.
             </p>
           )}
 

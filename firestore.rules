@@ -2,48 +2,64 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function callerUserDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
+    // Helper function
     function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && callerUserDoc().data.get('role', '') == 'admin';
+      return request.auth != null &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
-    function validRole(r) {
-      return r == 'admin' || r == 'traveler' || r == 'driver';
-    }
-
+    // Users collection
     match /users/{userId} {
-      allow read: if request.auth != null && (
-        request.auth.uid == userId ||
-        isAdmin()
-      );
 
-      allow create: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.role == 'traveler';
-
-      allow update: if request.auth != null && (
-        (
-          request.auth.uid == userId
-          && request.resource.data.get('role', resource.data.get('role', 'traveler'))
-            == resource.data.get('role', 'traveler')
-        )
-        ||
-        (
-          isAdmin()
-          && validRole(request.resource.data.role)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt'])
-        )
-      );
+      // User can access own document
+      // Admin can access all user documents
+      allow read, write: if request.auth != null &&
+                         (request.auth.uid == userId || isAdmin());
     }
 
-    /** Single global banner config; public read, admin-only write. */
-    match /flashDealSettings/{docId} {
+    // Flash-deal booking confirmations (same doc id as flashDeals/{campaignId})
+    match /users/{userId}/flashDeals/{flashDealCampaignId} {
+      allow read: if request.auth != null &&
+                  (request.auth.uid == userId || isAdmin());
+
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && flashDealCampaignId == request.resource.data.flashDealDocId
+        && exists(/databases/$(database)/documents/flashDeals/$(flashDealCampaignId))
+        && request.resource.data.keys().hasOnly([
+          'flashDealDocId', 'packageSlug', 'packageTitle', 'primaryName',
+          'primaryPassport', 'primaryGender', 'partners', 'phone',
+          'addonTitles', 'notes', 'estimatedBillLines', 'submitterEmail',
+          'submittedAt'
+        ])
+        && request.resource.data.packageSlug is string
+        && request.resource.data.packageTitle is string
+        && request.resource.data.primaryName is string
+        && request.resource.data.primaryPassport is string
+        && request.resource.data.primaryGender is string
+        && (request.resource.data.primaryGender == 'male'
+          || request.resource.data.primaryGender == 'female')
+        && request.resource.data.partners is list
+        && request.resource.data.partners.size() <= 30
+        && request.resource.data.phone is string
+        && request.resource.data.addonTitles is list
+        && request.resource.data.notes is string
+        && request.resource.data.estimatedBillLines is list
+        && request.resource.data.submittedAt is timestamp
+        && (request.resource.data.submitterEmail == null
+          || request.resource.data.submitterEmail is string);
+
+      allow delete: if false;
+    }
+
+    // Flash Deal Settings collection
+    match /flashDeals/{docId} {
+
+      // Any user can read flash deals
       allow read: if true;
-      allow create, update: if isAdmin() && docId == 'current';
+
+      // Only admin can write
+      allow write: if isAdmin();
     }
   }
 }

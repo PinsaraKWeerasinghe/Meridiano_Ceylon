@@ -1,17 +1,33 @@
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  limit,
   onSnapshot,
+  query,
   serverTimestamp,
-  setDoc,
+  where,
+  writeBatch,
+  type DocumentSnapshot,
+  type QuerySnapshot,
   type Timestamp,
   type Unsubscribe,
 } from "firebase/firestore";
 import { colomboDayBoundsMs } from "@/lib/flash-deal-colombo";
 import { getFirestoreDb } from "@/lib/firebase/db";
 
-export const FLASH_DEAL_SETTINGS_COLLECTION = "flashDealSettings";
-export const FLASH_DEAL_SETTINGS_DOC_ID = "current";
+/** Campaign documents (admin CMS); matches Firestore rules `flashDeals/{docId}`. */
+export const FLASH_DEALS_COLLECTION = "flashDeals";
+
+/**
+ * Legacy singleton doc id — used as banner/detail **fallback** when no deal has
+ * `isFeatured: true`. Traveller confirmations still use each campaign’s real doc id.
+ */
+export const FLASH_DEAL_LEGACY_DOC_ID = "current";
+
+/** @deprecated Use {@link FLASH_DEAL_LEGACY_DOC_ID} */
+export const FLASH_DEAL_CAMPAIGN_DOC_ID = FLASH_DEAL_LEGACY_DOC_ID;
 
 /** Public route for full flash-deal content */
 export const FLASH_DEAL_DETAIL_PATH = "/flash-deal";
@@ -26,6 +42,8 @@ export type FlashDealSettingsInput = {
   /** ISO `YYYY-MM-DD` */
   dealDate: string;
   disabled: boolean;
+  /** Drives homepage banner + `/flash-deal` together with {@link disabled}. */
+  isFeatured: boolean;
   description: string;
   /** ISO `YYYY-MM-DD` — fixed departure window start */
   fixedTourStartDate: string;
@@ -167,6 +185,7 @@ const DEFAULT_FLASH_DEAL_FORM: FlashDealSettingsInput = {
   title: "Exclusive Sri Lanka packages - limited slots",
   dealDate: "2026-06-06",
   disabled: false,
+  isFeatured: false,
   description:
     "Limited slots on curated fixed-date departures. Transport, boutique stays, and breakfast included unless noted.",
   fixedTourStartDate: "2026-06-01",
@@ -179,19 +198,144 @@ const DEFAULT_FLASH_DEAL_FORM: FlashDealSettingsInput = {
   registrationPrice: "Registration fee confirmed on enquiry",
 };
 
-export async function loadFlashDealForAdminPage(): Promise<{
+export type FlashDealListRow = {
+  id: string;
+  title: string;
+  dealDate: string;
+  disabled: boolean;
+  isFeatured: boolean;
+};
+
+function timestampMs(value: unknown): number {
+  if (
+    value &&
+    typeof value === "object" &&
+    "toMillis" in value &&
+    typeof (value as Timestamp).toMillis === "function"
+  ) {
+    return (value as Timestamp).toMillis();
+  }
+  return 0;
+}
+
+function docSortMs(data: Record<string, unknown>): number {
+  const u = timestampMs(data.updatedAt);
+  if (u) return u;
+  return timestampMs(data.createdAt);
+}
+
+export function createEmptyFlashDealDraft(): FlashDealSettingsInput {
+  return { ...DEFAULT_FLASH_DEAL_FORM };
+}
+
+export async function listFlashDealsForAdmin(): Promise<FlashDealListRow[]> {
+  const snap = await getDocs(collection(getFirestoreDb(), FLASH_DEALS_COLLECTION));
+  const decorated = snap.docs.map((d) => {
+    const data = d.data() as Record<string, unknown>;
+    const title =
+      typeof data.title === "string" && data.title.trim()
+        ? data.title.trim()
+        : "(Untitled)";
+    const dealDate =
+      typeof data.dealDate === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(data.dealDate.trim())
+        ? data.dealDate.trim()
+        : "";
+    const row: FlashDealListRow = {
+      id: d.id,
+      title,
+      dealDate,
+      disabled: data.disabled === true,
+      isFeatured: data.isFeatured === true,
+    };
+    return { row, ms: docSortMs(data) };
+  });
+  decorated.sort((a, b) => b.ms - a.ms);
+  return decorated.map((x) => x.row);
+}
+
+function pickBestFromFeaturedQuery<T>(
+  snap: QuerySnapshot,
+  parse: (data: Record<string, unknown>) => T | null,
+): T | null {
+  let best: { value: T; ms: number } | null = null;
+  for (const d of snap.docs) {
+    const data = d.data() as Record<string, unknown>;
+    const value = parse(data);
+    if (value === null) continue;
+    const ms = docSortMs(data);
+    if (!best || ms >= best.ms) best = { value, ms };
+  }
+  return best?.value ?? null;
+}
+
+function subscribeFeaturedOrLegacyFlashDeal<T>(
+  parse: (data: Record<string, unknown>) => T | null,
+  onValue: (value: T | null) => void,
+): Unsubscribe {
+  const db = getFirestoreDb();
+  let fromFeatured: T | null = null;
+  let fromLegacy: T | null = null;
+
+  const emit = () => onValue(fromFeatured ?? fromLegacy);
+
+  const unsubFeatured = onSnapshot(
+    query(
+      collection(db, FLASH_DEALS_COLLECTION),
+      where("isFeatured", "==", true),
+      limit(25),
+    ),
+    (qSnap) => {
+      fromFeatured = pickBestFromFeaturedQuery(qSnap, parse);
+      emit();
+    },
+    () => {
+      fromFeatured = null;
+      emit();
+    },
+  );
+
+  const unsubLegacy = onSnapshot(
+    doc(db, FLASH_DEALS_COLLECTION, FLASH_DEAL_LEGACY_DOC_ID),
+    (dSnap: DocumentSnapshot) => {
+      if (!dSnap.exists()) fromLegacy = null;
+      else fromLegacy = parse(dSnap.data() as Record<string, unknown>);
+      emit();
+    },
+    () => {
+      fromLegacy = null;
+      emit();
+    },
+  );
+
+  return () => {
+    unsubFeatured();
+    unsubLegacy();
+  };
+}
+
+export async function loadFlashDealForAdminPage(
+  dealId: string | null,
+): Promise<{
   values: FlashDealSettingsInput;
   meta: FlashDealAdminMeta | null;
+  dealId: string | null;
 }> {
-  const ref = doc(
-    getFirestoreDb(),
-    FLASH_DEAL_SETTINGS_COLLECTION,
-    FLASH_DEAL_SETTINGS_DOC_ID,
-  );
+  if (!dealId || dealId.trim() === "") {
+    return {
+      values: { ...DEFAULT_FLASH_DEAL_FORM },
+      meta: null,
+      dealId: null,
+    };
+  }
+
+  const trimmed = dealId.trim();
+  const ref = doc(getFirestoreDb(), FLASH_DEALS_COLLECTION, trimmed);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    return { values: { ...DEFAULT_FLASH_DEAL_FORM }, meta: null };
+    throw new Error("That flash deal no longer exists.");
   }
+
   const d = snap.data() as Record<string, unknown>;
   const title =
     typeof d.title === "string" && d.title.trim()
@@ -203,6 +347,7 @@ export async function loadFlashDealForAdminPage(): Promise<{
       ? d.dealDate.trim()
       : DEFAULT_FLASH_DEAL_FORM.dealDate;
   const disabled = d.disabled === true;
+  const isFeatured = d.isFeatured === true;
   const cAt = asTimestamp(d.createdAt);
   const uAt = asTimestamp(d.updatedAt);
   const meta: FlashDealAdminMeta | null =
@@ -228,6 +373,7 @@ export async function loadFlashDealForAdminPage(): Promise<{
     title,
     dealDate,
     disabled,
+    isFeatured,
     description:
       strField(d, "description") || DEFAULT_FLASH_DEAL_FORM.description,
     fixedTourStartDate:
@@ -251,14 +397,15 @@ export async function loadFlashDealForAdminPage(): Promise<{
       DEFAULT_FLASH_DEAL_FORM.registrationPrice,
   };
 
-  return { values, meta };
+  return { values, meta, dealId: trimmed };
 }
 
 export async function saveFlashDealSettings(
   adminUid: string,
   adminEmail: string | null,
+  editingDealId: string | null,
   input: FlashDealSettingsInput,
-): Promise<void> {
+): Promise<{ dealId: string }> {
   const title = input.title.trim();
   const dealDate = input.dealDate.trim();
   if (!title) throw new Error("Title is required.");
@@ -284,6 +431,7 @@ export async function saveFlashDealSettings(
     title,
     dealDate,
     disabled: input.disabled,
+    isFeatured: input.isFeatured,
     description: input.description.trim(),
     fixedTourStartDate: tourStart,
     fixedTourEndDate: tourEnd,
@@ -295,16 +443,33 @@ export async function saveFlashDealSettings(
     registrationPrice: input.registrationPrice.trim(),
   };
 
-  const ref = doc(
-    getFirestoreDb(),
-    FLASH_DEAL_SETTINGS_COLLECTION,
-    FLASH_DEAL_SETTINGS_DOC_ID,
-  );
-  const snap = await getDoc(ref);
+  const db = getFirestoreDb();
+  const dealRef =
+    editingDealId && editingDealId.trim() !== ""
+      ? doc(db, FLASH_DEALS_COLLECTION, editingDealId.trim())
+      : doc(collection(db, FLASH_DEALS_COLLECTION));
+  const dealId = dealRef.id;
+
+  const snap = await getDoc(dealRef);
   const now = serverTimestamp();
+  const batch = writeBatch(db);
+
+  if (input.isFeatured) {
+    const featured = await getDocs(
+      query(
+        collection(db, FLASH_DEALS_COLLECTION),
+        where("isFeatured", "==", true),
+      ),
+    );
+    featured.forEach((s) => {
+      if (s.id !== dealId) {
+        batch.update(s.ref, { isFeatured: false });
+      }
+    });
+  }
 
   if (!snap.exists()) {
-    await setDoc(ref, {
+    batch.set(dealRef, {
       ...detailPayload,
       createdByUid: adminUid,
       createdByEmail: adminEmail,
@@ -313,71 +478,31 @@ export async function saveFlashDealSettings(
       lastModifiedByUid: adminUid,
       lastModifiedByEmail: adminEmail,
     });
-    return;
+  } else {
+    batch.set(
+      dealRef,
+      {
+        ...detailPayload,
+        updatedAt: now,
+        lastModifiedByUid: adminUid,
+        lastModifiedByEmail: adminEmail,
+      },
+      { merge: true },
+    );
   }
 
-  await setDoc(
-    ref,
-    {
-      ...detailPayload,
-      updatedAt: now,
-      lastModifiedByUid: adminUid,
-      lastModifiedByEmail: adminEmail,
-    },
-    { merge: true },
-  );
+  await batch.commit();
+  return { dealId };
 }
 
 export function subscribeFlashDealSettingsForBar(
   onConfig: (config: FlashDealBarConfig | null) => void,
 ): Unsubscribe {
-  const ref = doc(
-    getFirestoreDb(),
-    FLASH_DEAL_SETTINGS_COLLECTION,
-    FLASH_DEAL_SETTINGS_DOC_ID,
-  );
-
-  return onSnapshot(
-    ref,
-    (snap) => {
-      if (!snap.exists()) {
-        onConfig(null);
-        return;
-      }
-      const parsed = parseFlashDealForBar(
-        snap.data() as Record<string, unknown>,
-      );
-      onConfig(parsed);
-    },
-    () => {
-      onConfig(null);
-    },
-  );
+  return subscribeFeaturedOrLegacyFlashDeal(parseFlashDealForBar, onConfig);
 }
 
 export function subscribeFlashDealDetailPage(
   onDetail: (detail: FlashDealDetailContent | null) => void,
 ): Unsubscribe {
-  const ref = doc(
-    getFirestoreDb(),
-    FLASH_DEAL_SETTINGS_COLLECTION,
-    FLASH_DEAL_SETTINGS_DOC_ID,
-  );
-
-  return onSnapshot(
-    ref,
-    (snap) => {
-      if (!snap.exists()) {
-        onDetail(null);
-        return;
-      }
-      const parsed = parseFlashDealForDetailPage(
-        snap.data() as Record<string, unknown>,
-      );
-      onDetail(parsed);
-    },
-    () => {
-      onDetail(null);
-    },
-  );
+  return subscribeFeaturedOrLegacyFlashDeal(parseFlashDealForDetailPage, onDetail);
 }
