@@ -21,8 +21,15 @@ const DEFAULT_TEMPLATE_ID = "54ad501d-baf0-4835-afd4-067b32f7f831";
 
 const TRUSTPILOT_LOGO_SRC = "/SiteInfo/Trustpilot_Logo.svg.png";
 
-function TrustpilotLogoTop() {
-  return <ReviewPanelLogo src={TRUSTPILOT_LOGO_SRC} unoptimized />;
+function TrustpilotLogoTop({ className }: { className?: string }) {
+  return (
+    <ReviewPanelLogo
+      src={TRUSTPILOT_LOGO_SRC}
+      unoptimized
+      variant="trustpilot"
+      className={className}
+    />
+  );
 }
 
 export function TrustPilotTrustBox() {
@@ -55,29 +62,7 @@ export function TrustPilotTrustBox() {
   if (!configured) {
     return (
       <div className={homeReviewPanelClass}>
-        <TrustpilotLogoTop />
-
-        <div className="mx-auto grid max-w-lg justify-items-center gap-8 text-center sm:grid-cols-2 sm:gap-10">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-              Rating
-            </p>
-            <p className="mt-2 font-serif text-3xl font-semibold tracking-tight text-forest tabular-nums">
-              N/A
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-stone-500">
-              Reviews
-            </p>
-            <p className="mt-2 font-serif text-3xl font-semibold tracking-tight text-forest tabular-nums">
-              N/A
-            </p>
-          </div>
-        </div>
-        <p className="mt-8 text-center text-xs text-stone-500">
-          Trustpilot will be connected soon.
-        </p>
+        <TrustpilotLogoTop className="mb-0" />
       </div>
     );
   }
