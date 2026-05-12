@@ -8,6 +8,71 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
+    function flashDealSlotsTakenIncrement() {
+      return request.auth != null
+        && maxSlotsIsPositive(resource.data)
+        && dealCampaignImmutableExceptSlotsTaken()
+        && slotsTakenIsNonNegative(request.resource.data.slotsTaken)
+        && request.resource.data.slotsTaken <= resource.data.maxSlots
+        && request.resource.data.slotsTaken == prevSlotsTaken(resource.data) + 1;
+    }
+
+    /**
+     * MapDiff / changedKeys is unreliable for client patch merges — lock every stored
+     * campaign field except `slotsTaken`, plus audit timestamps untouched.
+     */
+    function dealCampaignImmutableExceptSlotsTaken() {
+      return request.resource.data.title == resource.data.title
+        && request.resource.data.dealDate == resource.data.dealDate
+        && request.resource.data.disabled == resource.data.disabled
+        && request.resource.data.isFeatured == resource.data.isFeatured
+        && request.resource.data.description == resource.data.description
+        && request.resource.data.fixedTourStartDate == resource.data.fixedTourStartDate
+        && request.resource.data.fixedTourEndDate == resource.data.fixedTourEndDate
+        && request.resource.data.perPersonCharge == resource.data.perPersonCharge
+        && request.resource.data.groupSize == resource.data.groupSize
+        && request.resource.data.hotelLevel == resource.data.hotelLevel
+        && request.resource.data.transport == resource.data.transport
+        && request.resource.data.itinerarySnaps == resource.data.itinerarySnaps
+        && request.resource.data.registrationPrice == resource.data.registrationPrice
+        && request.resource.data.maxSlots == resource.data.maxSlots
+        && (!resource.data.keys().hasAny(['createdByUid'])
+          || request.resource.data.createdByUid == resource.data.createdByUid)
+        && (!resource.data.keys().hasAny(['createdByEmail'])
+          || request.resource.data.createdByEmail == resource.data.createdByEmail)
+        && (!resource.data.keys().hasAny(['createdAt'])
+          || request.resource.data.createdAt == resource.data.createdAt)
+        && (!resource.data.keys().hasAny(['updatedAt'])
+          || request.resource.data.updatedAt == resource.data.updatedAt)
+        && (!resource.data.keys().hasAny(['lastModifiedByUid'])
+          || request.resource.data.lastModifiedByUid == resource.data.lastModifiedByUid)
+        && (!resource.data.keys().hasAny(['lastModifiedByEmail'])
+          || request.resource.data.lastModifiedByEmail == resource.data.lastModifiedByEmail);
+    }
+
+    /** Firestore often stores JS numbers as floats; accept int or whole floats. */
+    function maxSlotsIsPositive(data) {
+      return (data.maxSlots is int || data.maxSlots is float)
+        && data.maxSlots >= 1;
+    }
+
+    function slotsTakenIsNonNegative(v) {
+      return (v is int || v is float) && v >= 0;
+    }
+
+    function prevSlotsTaken(data) {
+      return data.keys().hasAny(['slotsTaken'])
+        && slotsTakenIsNonNegative(data.slotsTaken)
+        ? data.slotsTaken
+        : 0;
+    }
+
+    /** `serverTimestamp()` is represented as `request.time` during rule evaluation. */
+    function submittedAtAllowed() {
+      return request.resource.data.submittedAt == request.time
+        || request.resource.data.submittedAt is timestamp;
+    }
+
     // Users collection
     match /users/{userId} {
 
@@ -45,11 +110,34 @@ service cloud.firestore {
         && request.resource.data.addonTitles is list
         && request.resource.data.notes is string
         && request.resource.data.estimatedBillLines is list
-        && request.resource.data.submittedAt is timestamp
+        && submittedAtAllowed()
         && (request.resource.data.submitterEmail == null
           || request.resource.data.submitterEmail is string);
 
       allow delete: if false;
+    }
+
+    // User booking ledger (flash-deal + package enquiries saved from the app)
+    match /users/{userId}/Bookings/{bookingId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == userId || isAdmin());
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly([
+          'kind', 'typeLabel', 'bookingDate', 'packageSlug',
+          'flashDealDocId', 'createdAt'
+        ])
+        && request.resource.data.kind is string
+        && (request.resource.data.kind == 'flash-deal'
+          || request.resource.data.kind == 'package')
+        && request.resource.data.typeLabel is string
+        && request.resource.data.bookingDate is string
+        && request.resource.data.packageSlug is string
+        && request.resource.data.flashDealDocId is string
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
     }
 
     // Flash Deal Settings collection
@@ -58,8 +146,11 @@ service cloud.firestore {
       // Any user can read flash deals
       allow read: if true;
 
-      // Only admin can write
-      allow write: if isAdmin();
+      allow create: if isAdmin();
+
+      allow update: if isAdmin() || flashDealSlotsTakenIncrement();
+
+      allow delete: if false;
     }
     
     match /flashDeals/{dealId}/Travellers/{travellerUid} {
@@ -89,7 +180,7 @@ service cloud.firestore {
         && request.resource.data.addonTitles is list
         && request.resource.data.notes is string
         && request.resource.data.estimatedBillLines is list
-        && request.resource.data.submittedAt is timestamp
+        && submittedAtAllowed()
         && (request.resource.data.submitterEmail == null
           || request.resource.data.submitterEmail is string);
 

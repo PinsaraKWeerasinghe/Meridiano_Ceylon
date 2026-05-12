@@ -17,10 +17,9 @@ import {
 import { getFirebaseAuth, isFirebaseConfigured } from "@/lib/firebase";
 
 const PROFILE_ROUTE = "/profile";
+const MY_BOOKINGS_ROUTE = "/my-bookings";
 const ADMIN_USERS_ROUTE = "/admin/users";
 const ADMIN_FLASH_DEAL_ROUTE = "/admin/flash-deal";
-/** Wire when the page exists (`null` = disabled). */
-const TRIP_HISTORY_ROUTE = null as string | null;
 
 export function AuthNav() {
   const router = useRouter();
@@ -97,8 +96,8 @@ export function AuthNav() {
               </>
             ) : null}
             <PlaceholderNavItem
-              href={TRIP_HISTORY_ROUTE}
-              label="Trip History"
+              href={MY_BOOKINGS_ROUTE}
+              label="My Bookings"
               onNavigate={() => setNavbarOpen(false)}
             />
           </div>

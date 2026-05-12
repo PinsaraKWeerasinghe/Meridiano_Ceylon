@@ -139,12 +139,20 @@ export function FlashDealDetailPageClient() {
         notes: "",
         estimatedBillLines: [],
         submitterEmail: user.email ?? null,
+        dealDate: detail.dealDate,
       });
       setBookingOk(true);
     } catch (err) {
-      setBookingError(
-        err instanceof Error ? err.message : "Could not complete booking.",
-      );
+      const msg =
+        err instanceof Error ? err.message : "Could not complete booking.";
+      const code =
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        typeof (err as { code?: unknown }).code === "string"
+          ? (err as { code: string }).code
+          : undefined;
+      setBookingError(code ? `${msg} (${code})` : msg);
     } finally {
       setBooking(false);
     }
@@ -186,6 +194,14 @@ export function FlashDealDetailPageClient() {
   const bookingReady =
     Boolean(detail.title.trim()) &&
     /^\d{4}-\d{2}-\d{2}$/.test(detail.dealDate);
+
+  const slotsLimited = detail.maxSlots >= 1;
+  const spotsLeft = slotsLimited
+    ? Math.max(0, detail.maxSlots - detail.slotsTaken)
+    : null;
+  const soldOut = slotsLimited && spotsLeft === 0;
+  const bookingAllowed =
+    bookingReady && slotsLimited && !soldOut;
 
   const dateLabel = detail.dealDate
     ? formatDealDateLabel(detail.dealDate)
@@ -350,6 +366,21 @@ export function FlashDealDetailPageClient() {
                       </div>
                     </div>
 
+                    {spotsLeft !== null ? (
+                      <div className="flex justify-between gap-4 border-b border-stone-200 pb-3">
+                        <span className="text-stone-700">Spots remaining</span>
+                        <span className="shrink-0 tabular-nums text-right font-semibold text-forest">
+                          {soldOut ? (
+                            <span className="text-amber-900">Sold out</span>
+                          ) : (
+                            <>
+                              {spotsLeft} of {detail.maxSlots}
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    ) : null}
+
                     <div className="flex justify-between gap-4 border-b border-stone-200 pb-3">
                       <span className="text-stone-700">Tour window</span>
                       <span className="shrink-0 text-right text-stone-800">
@@ -395,9 +426,20 @@ export function FlashDealDetailPageClient() {
                 admin.
               </p>
             ) : null}
+            {bookingReady && !slotsLimited ? (
+              <p className="text-xs text-amber-800">
+                Booking isn&apos;t open yet — an administrator still needs to set
+                maximum bookings (slots) for this campaign.
+              </p>
+            ) : null}
+            {soldOut ? (
+              <p className="text-xs font-medium text-amber-900">
+                All spots for this flash deal are filled.
+              </p>
+            ) : null}
             <button
               type="button"
-              disabled={booking || !dealDocId || !bookingReady}
+              disabled={booking || !dealDocId || !bookingAllowed}
               onClick={() => void handleBookNow()}
               className="inline-flex min-w-[180px] items-center justify-center rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349] disabled:opacity-50"
             >

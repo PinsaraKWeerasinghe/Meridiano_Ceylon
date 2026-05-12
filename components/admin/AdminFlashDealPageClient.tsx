@@ -47,6 +47,7 @@ export function AdminFlashDealPageClient() {
   const [hotelLevel, setHotelLevel] = useState("");
   const [transport, setTransport] = useState("");
   const [registrationPrice, setRegistrationPrice] = useState("");
+  const [maxSlots, setMaxSlots] = useState<number>(0);
   const [itinerarySnaps, setItinerarySnaps] = useState<
     FlashDealItinerarySnap[]
   >([{ ...EMPTY_ITINERARY_SNAP }]);
@@ -73,6 +74,7 @@ export function AdminFlashDealPageClient() {
     setHotelLevel(values.hotelLevel);
     setTransport(values.transport);
     setRegistrationPrice(values.registrationPrice);
+    setMaxSlots(values.maxSlots);
     setItinerarySnaps(
       values.itinerarySnaps.length > 0
         ? values.itinerarySnaps.map((s) => ({ ...s }))
@@ -188,6 +190,7 @@ export function AdminFlashDealPageClient() {
         transport,
         registrationPrice,
         itinerarySnaps,
+        maxSlots,
       };
       const { dealId } = await saveFlashDealSettings(
         user.uid,
@@ -337,6 +340,28 @@ export function AdminFlashDealPageClient() {
               aria-required="true"
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
+          </label>
+
+          <label className="block text-sm text-stone-600">
+            Maximum bookings (slots) <span className="text-red-600">*</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              required
+              aria-required="true"
+              value={maxSlots > 0 ? maxSlots : ""}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setMaxSlots(raw === "" ? 0 : Math.max(0, Math.floor(Number(raw))));
+              }}
+              placeholder="e.g. 20"
+              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
+            />
+            <span className="mt-1 block text-xs text-stone-500">
+              Homepage availability and sold-out state use this cap versus bookings
+              in Firestore.
+            </span>
           </label>
 
           <label className="block text-sm text-stone-600">

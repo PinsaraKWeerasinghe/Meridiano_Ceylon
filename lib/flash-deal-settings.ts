@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   where,
   writeBatch,
+  type QueryDocumentSnapshot,
   type QuerySnapshot,
   type Timestamp,
   type Unsubscribe,
@@ -58,20 +59,28 @@ export type FlashDealSettingsInput = {
   transport: string;
   itinerarySnaps: FlashDealItinerarySnap[];
   registrationPrice: string;
+  /** Maximum traveller bookings (homepage availability + sold-out). */
+  maxSlots: number;
 };
 
 export type FlashDealBarConfig = {
+  dealDocId: string;
   title: string;
   dealDate: string;
   dealWindowStartMs: number;
   dealEndMs: number;
+  /** When ≥ 1, availability UI uses slots left; when 0 (legacy), uses deal-window time. */
+  maxSlots: number;
+  slotsTaken: number;
 };
 
 /** Full offer copy for the `/flash-deal` page (banner can still show when this parses). */
 export type FlashDealDetailContent = Omit<
   FlashDealSettingsInput,
   "disabled" | "isFeatured"
->;
+> & {
+  slotsTaken: number;
+};
 
 /** Featured or legacy-resolved campaign shown on `/flash-deal`. */
 export type FlashDealPublicResolved = {
@@ -128,6 +137,35 @@ function isoDateOrEmpty(data: Record<string, unknown>, key: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : "";
 }
 
+function parseFirestoreNonNegativeInt(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const n = Math.trunc(value);
+    return n >= 0 ? n : null;
+  }
+  if (typeof value === "string") {
+    const s = value.trim();
+    if (!s || !/^\d+$/.test(s)) return null;
+    const n = Number.parseInt(s, 10);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+  return null;
+}
+
+function parseFirestorePositiveInt(value: unknown): number | null {
+  const n = parseFirestoreNonNegativeInt(value);
+  return n !== null && n >= 1 ? n : null;
+}
+
+function maxSlotsFromData(data: Record<string, unknown>): number {
+  const n = parseFirestorePositiveInt(data.maxSlots);
+  return n ?? 0;
+}
+
+function slotsTakenFromData(data: Record<string, unknown>): number {
+  const n = parseFirestoreNonNegativeInt(data.slotsTaken);
+  return n ?? 0;
+}
+
 function asTimestamp(value: unknown): Timestamp | null {
   if (
     value &&
@@ -141,8 +179,9 @@ function asTimestamp(value: unknown): Timestamp | null {
 }
 
 export function parseFlashDealForBar(
-  data: Record<string, unknown>,
+  docSnap: QueryDocumentSnapshot,
 ): FlashDealBarConfig | null {
+  const data = docSnap.data() as Record<string, unknown>;
   if (data.disabled === true) return null;
   const title = typeof data.title === "string" ? data.title.trim() : "";
   const dealDate =
@@ -153,10 +192,13 @@ export function parseFlashDealForBar(
   if (!bounds) return null;
 
   return {
+    dealDocId: docSnap.id,
     title,
     dealDate,
     dealWindowStartMs: bounds.startMs,
     dealEndMs: bounds.endMs,
+    maxSlots: maxSlotsFromData(data),
+    slotsTaken: slotsTakenFromData(data),
   };
 }
 
@@ -181,10 +223,11 @@ export function parseFlashDealForDetailPage(
     transport: strField(data, "transport"),
     itinerarySnaps: normalizeItinerarySnaps(data.itinerarySnaps),
     registrationPrice: strField(data, "registrationPrice"),
+    maxSlots: maxSlotsFromData(data),
+    slotsTaken: slotsTakenFromData(data),
   };
 }
 
-/** Snaps for `/flash-deal`: real rows only — no placeholder tile when empty. */
 function normalizeItinerarySnapsForPublicDetailView(
   value: unknown,
 ): FlashDealItinerarySnap[] {
@@ -230,6 +273,8 @@ export function parseFlashDealForPublicDetailView(
       data.itinerarySnaps,
     ),
     registrationPrice: strField(data, "registrationPrice"),
+    maxSlots: maxSlotsFromData(data),
+    slotsTaken: slotsTakenFromData(data),
   };
 }
 
@@ -257,6 +302,7 @@ const DEFAULT_FLASH_DEAL_FORM: FlashDealSettingsInput = {
   transport: "Standard AC vehicle with private driver",
   itinerarySnaps: [{ ...DEFAULT_ITINERARY_SNAP }],
   registrationPrice: "Registration fee confirmed on enquiry",
+  maxSlots: 20,
 };
 
 export type FlashDealListRow = {
@@ -300,6 +346,7 @@ export function createEmptyFlashDealDraft(): FlashDealSettingsInput {
     transport: "",
     itinerarySnaps: [{ ...EMPTY_ITINERARY_SNAP }],
     registrationPrice: "",
+    maxSlots: 0,
   };
 }
 
@@ -331,42 +378,17 @@ export async function listFlashDealsForAdmin(): Promise<FlashDealListRow[]> {
 
 function pickBestFromFeaturedQuery<T>(
   snap: QuerySnapshot,
-  parse: (data: Record<string, unknown>) => T | null,
+  parse: (docSnap: QueryDocumentSnapshot) => T | null,
 ): T | null {
   let best: { value: T; ms: number } | null = null;
   for (const d of snap.docs) {
     const data = d.data() as Record<string, unknown>;
-    const value = parse(data);
+    const value = parse(d);
     if (value === null) continue;
     const ms = docSortMs(data);
     if (!best || ms >= best.ms) best = { value, ms };
   }
   return best?.value ?? null;
-}
-
-function subscribeFeaturedFlashDeal<T>(
-  parse: (data: Record<string, unknown>) => T | null,
-  onValue: (value: T | null) => void,
-): Unsubscribe {
-  const db = getFirestoreDb();
-
-  const unsubFeatured = onSnapshot(
-    query(
-      collection(db, FLASH_DEALS_COLLECTION),
-      where("isFeatured", "==", true),
-      limit(25),
-    ),
-    (qSnap) => {
-      onValue(pickBestFromFeaturedQuery(qSnap, parse));
-    },
-    () => {
-      onValue(null);
-    },
-  );
-
-  return () => {
-    unsubFeatured();
-  };
 }
 
 export async function loadFlashDealForAdminPage(
@@ -392,6 +414,7 @@ export async function loadFlashDealForAdminPage(
   }
 
   const d = snap.data() as Record<string, unknown>;
+  const loadedMaxSlots = maxSlotsFromData(d);
   const title =
     typeof d.title === "string" && d.title.trim()
       ? d.title.trim()
@@ -450,6 +473,8 @@ export async function loadFlashDealForAdminPage(
     registrationPrice:
       strField(d, "registrationPrice") ||
       DEFAULT_FLASH_DEAL_FORM.registrationPrice,
+    maxSlots:
+      loadedMaxSlots > 0 ? loadedMaxSlots : DEFAULT_FLASH_DEAL_FORM.maxSlots,
   };
 
   return { values, meta, dealId: trimmed };
@@ -499,6 +524,14 @@ export async function saveFlashDealSettings(
     throw new Error("Registration price is required.");
   }
 
+  if (
+    !Number.isFinite(input.maxSlots) ||
+    !Number.isInteger(input.maxSlots) ||
+    input.maxSlots < 1
+  ) {
+    throw new Error("Maximum slots must be a whole number of at least 1.");
+  }
+
   const snapsRaw = sanitizeItinerarySnapsForSave(input.itinerarySnaps);
   const snaps = snapsRaw.filter(
     (s) => s.title.length > 0 || s.description.length > 0,
@@ -530,6 +563,7 @@ export async function saveFlashDealSettings(
     transport: input.transport.trim(),
     itinerarySnaps: snaps,
     registrationPrice: input.registrationPrice.trim(),
+    maxSlots: input.maxSlots,
   };
 
   const db = getFirestoreDb();
@@ -540,6 +574,15 @@ export async function saveFlashDealSettings(
   const dealId = dealRef.id;
 
   const snap = await getDoc(dealRef);
+  if (snap.exists()) {
+    const taken = slotsTakenFromData(snap.data() as Record<string, unknown>);
+    if (input.maxSlots < taken) {
+      throw new Error(
+        `Maximum slots cannot be less than current bookings (${taken}).`,
+      );
+    }
+  }
+
   const now = serverTimestamp();
   const batch = writeBatch(db);
 
@@ -560,6 +603,7 @@ export async function saveFlashDealSettings(
   if (!snap.exists()) {
     batch.set(dealRef, {
       ...detailPayload,
+      slotsTaken: 0,
       createdByUid: adminUid,
       createdByEmail: adminEmail,
       createdAt: now,
@@ -609,29 +653,37 @@ export function subscribeFlashDealPublic(
 ): Unsubscribe {
   const db = getFirestoreDb();
 
-  const unsubFeatured = onSnapshot(
+  return onSnapshot(
     query(
       collection(db, FLASH_DEALS_COLLECTION),
       where("isFeatured", "==", true),
       limit(25),
     ),
     (qSnap) => {
-      onValue(pickBestFeaturedDealDetail(qSnap));
+      const resolved = pickBestFeaturedDealDetail(qSnap);
+      onValue(resolved);
     },
-    () => {
-      onValue(null);
-    },
+    () => onValue(null),
   );
-
-  return () => {
-    unsubFeatured();
-  };
 }
 
 export function subscribeFlashDealSettingsForBar(
   onConfig: (config: FlashDealBarConfig | null) => void,
 ): Unsubscribe {
-  return subscribeFeaturedFlashDeal(parseFlashDealForBar, onConfig);
+  const db = getFirestoreDb();
+
+  return onSnapshot(
+    query(
+      collection(db, FLASH_DEALS_COLLECTION),
+      where("isFeatured", "==", true),
+      limit(25),
+    ),
+    (qSnap) => {
+      const parsed = pickBestFromFeaturedQuery(qSnap, parseFlashDealForBar);
+      onConfig(parsed);
+    },
+    () => onConfig(null),
+  );
 }
 
 export function subscribeFlashDealDetailPage(

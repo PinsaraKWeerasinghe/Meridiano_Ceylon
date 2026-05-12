@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuthUser } from "@/components/auth/useAuthUser";
 import { Card } from "@/components/ui/Card";
 import { addonTours, allTours } from "@/data/tours";
 import { getTourDetailBySlug } from "@/data/tour-detail-content";
@@ -10,6 +11,7 @@ import {
   computeBookingBillBreakdown,
   formatBookingBillWhatsAppLines,
 } from "@/lib/package-booking-bill";
+import { appendUserBooking } from "@/lib/user-bookings";
 import { cn } from "@/lib/utils";
 import {
   buildPackageBookingWhatsAppMessage,
@@ -37,6 +39,7 @@ function tourForPackageSlug(slug: string) {
 
 export function PackageBookingForm() {
   const searchParams = useSearchParams();
+  const { user, ready: authReady } = useAuthUser();
 
   const [packageSlug, setPackageSlug] = useState(
     () => packageChoices[0]?.slug ?? "",
@@ -57,6 +60,7 @@ export function PackageBookingForm() {
   const [addonIds, setAddonIds] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (tourForPackageSlug(packageSlug)?.kind === "specialty") {
@@ -119,7 +123,7 @@ export function PackageBookingForm() {
     setPartners((p) => p.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
@@ -195,7 +199,29 @@ export function PackageBookingForm() {
       notes,
       estimatedBillLines,
     });
-    openWhatsAppWithText(text);
+
+    setSubmitting(true);
+    try {
+      const uid = user?.uid?.trim();
+      if (uid) {
+        await appendUserBooking(uid, {
+          kind: "package",
+          typeLabel: `Package · ${selectedTitle}`,
+          bookingDate: "",
+          packageSlug,
+          flashDealDocId: "",
+        });
+      }
+      openWhatsAppWithText(text);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not save this booking to your account.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -549,13 +575,34 @@ export function PackageBookingForm() {
           </p>
         ) : null}
 
+        {authReady && !user ? (
+          <p className="text-xs text-stone-500">
+            <Link
+              href="/login?next=/packages/book"
+              className="font-semibold text-lagoon underline-offset-2 hover:underline"
+            >
+              Sign in
+            </Link>{" "}
+            to keep a copy of each submission under{" "}
+            <Link
+              href="/my-bookings"
+              className="font-semibold text-lagoon underline-offset-2 hover:underline"
+            >
+              My Bookings
+            </Link>
+            .
+          </p>
+        ) : null}
+
         <button
           type="submit"
+          disabled={submitting}
           className={cn(
             "w-full rounded-full bg-gold py-4 text-sm font-semibold text-cream transition hover:bg-[#1d5349]",
+            submitting && "opacity-60",
           )}
         >
-          Confirm &amp; send to WhatsApp
+          {submitting ? "Saving…" : "Confirm & send to WhatsApp"}
         </button>
       </form>
     </Card>

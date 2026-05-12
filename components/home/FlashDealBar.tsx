@@ -37,6 +37,13 @@ function availabilityPercentRemaining(
   return Math.min(100, Math.max(0, (leftMs / windowMs) * 100));
 }
 
+/** Spots left as % of {@link maxSlots}; ignores deal timing (homepage slot meter). */
+function slotAvailabilityPercent(maxSlots: number, slotsTaken: number): number {
+  if (maxSlots < 1) return 100;
+  const left = Math.max(0, maxSlots - slotsTaken);
+  return Math.min(100, Math.max(0, (left / maxSlots) * 100));
+}
+
 type FlashDealBarChromeProps = {
   config: FlashDealBarConfig;
   dismissed: boolean;
@@ -78,7 +85,11 @@ function FlashDealBarChrome({
   const timerDisplay =
     now === null ? "—:—:—:—" : formatRemaining(remainingMs);
   const pctLeft =
-    now === null ? 100 : availabilityPercentRemaining(now, windowStartMs, dealEndMs);
+    config.maxSlots >= 1
+      ? slotAvailabilityPercent(config.maxSlots, config.slotsTaken)
+      : now === null
+        ? 100
+        : availabilityPercentRemaining(now, windowStartMs, dealEndMs);
 
   const dateLabel = formatDealDateLabel(config.dealDate);
   const shortDateLabel = formatDealDateShort(config.dealDate);
