@@ -37,7 +37,11 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
     fixedPackageGalleryById[detail.tourId] ?? [],
   );
   const tourRecord = allTours.find((t) => t.id === detail.tourId);
-  const showBookNow = tourRecord?.kind !== "addon";
+  const isAddon = tourRecord?.kind === "addon";
+  const addonPriceUsd = tourRecord?.bookingAddonPriceUsd;
+  const showAddonPriceCard =
+    isAddon && typeof addonPriceUsd === "number";
+  const showBookNow = !isAddon;
 
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
@@ -167,6 +171,28 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
             </aside>
           ) : null}
         </Card>
+
+        {showAddonPriceCard ? (
+          <div className="mt-12 flex flex-col items-center gap-4 border-t border-lagoon/20 pt-10">
+            <Card
+              className={cn(
+                "w-full max-w-xl space-y-2 px-5 py-4 text-center text-sm leading-relaxed text-stone-700",
+                packagesGreenCard,
+              )}
+            >
+              <p className="text-2xl font-semibold tabular-nums text-forest">
+                ${addonPriceUsd}
+                <span className="ml-1 text-sm font-medium text-stone-600">
+                  / booking
+                </span>
+              </p>
+              <p className="text-stone-700">
+                Flat add-on fee per booking — layered onto any fixed package
+                during checkout. Final amount is confirmed before payment.
+              </p>
+            </Card>
+          </div>
+        ) : null}
 
         {showBookNow ? (
           <div className="mt-12 flex flex-col items-center gap-6 border-t border-lagoon/20 pt-10">

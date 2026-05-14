@@ -30,6 +30,17 @@ export function TourCard({
   const srcs = packageGalleryJpegOnly(coverImageSrcs.filter(Boolean));
   const withCover = srcs.length > 0;
   const lightText = onDark || withCover;
+  const addonPrice = tour.bookingAddonPriceUsd;
+  const hasAddonPrice = typeof addonPrice === "number";
+
+  const priceBadge = hasAddonPrice ? (
+    <span
+      className="pointer-events-none absolute bottom-3 right-3 z-20 text-base font-semibold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+      aria-label={`Add-on price $${addonPrice} per booking`}
+    >
+      ${addonPrice}
+    </span>
+  ) : null;
 
   const body = (
     <>
@@ -59,6 +70,7 @@ export function TourCard({
         className={cn(
           "mt-3 flex-1 text-sm leading-relaxed",
           lightText ? "text-stone-200" : "text-stone-600",
+          hasAddonPrice && "pb-2",
         )}
       >
         {tour.description}
@@ -132,17 +144,19 @@ export function TourCard({
         <div className="relative z-10 flex min-h-[19rem] flex-col justify-end gap-3 p-5">
           {body}
         </div>
+        {priceBadge}
       </Card>
     ) : (
       <Card
         className={cn(
-          "flex h-full flex-col transition hover:shadow-md",
+          "relative flex h-full flex-col transition hover:shadow-md",
           onDark &&
             "border-white/20 bg-black/35 text-cream shadow-lg shadow-black/30 backdrop-blur-md",
           className,
         )}
       >
         {body}
+        {priceBadge}
       </Card>
     );
 
