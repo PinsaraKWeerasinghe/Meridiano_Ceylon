@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -135,7 +136,7 @@ function categoryNavLinkClass({
   return cn(
     "flex w-full items-center justify-center rounded-xl border text-center font-semibold shadow-sm transition",
     !hasSection &&
-      "min-h-[3.5rem] px-4 py-3 text-sm border-lagoon/25 bg-white/90 hover:border-lagoon/40 hover:bg-lagoon/10 hover:shadow",
+      "min-h-[5.25rem] h-full px-5 py-5 text-base leading-snug border-lagoon/25 bg-white/90 hover:border-lagoon/40 hover:bg-lagoon/10 hover:shadow sm:min-h-[5.75rem] sm:px-6 sm:text-lg",
     hasSection &&
       cn(
         "min-h-[2.75rem] px-2 py-2 text-xs leading-snug sm:min-h-[3rem] sm:px-2.5 sm:py-2.5 sm:text-sm lg:px-3",
@@ -271,165 +272,202 @@ export function PackagesInteractiveHub({
   };
 
   return (
-    <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-6xl space-y-10">
+    <div
+      className={cn(
+        "bg-lagoon/10 px-4 sm:px-6",
+        !hasSection
+          ? "flex min-h-[calc(100dvh-var(--navbar-h))] flex-col pb-5 pt-12 sm:pb-6 sm:pt-14"
+          : "min-h-screen py-12 sm:py-16",
+      )}
+    >
+      <div
+        className={cn(
+          "mx-auto w-full max-w-6xl",
+          !hasSection
+            ? "flex flex-1 flex-col"
+            : "space-y-10",
+        )}
+      >
         <LayoutGroup id="packages-hub">
-          <header className="space-y-6">
-            <div>
-              <h1 className="font-serif text-4xl font-semibold text-forest">
-                Packages &amp; tours
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm text-stone-700">
-                Fixed itineraries anchor your dates; add-ons and specialty
-                experiences layer on the details that matter to you. Enquire via{" "}
-                <em>Build your journey</em> or WhatsApp for a tailored quote.
-              </p>
-            </div>
-          </header>
-
           <div
             className={cn(
-              hasSection &&
-                "lg:grid lg:min-h-[calc(100dvh-var(--navbar-h)-8rem)] lg:grid-cols-[minmax(260px,18rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-10 xl:gap-x-14",
+              !hasSection
+                ? "flex min-h-0 flex-1 flex-col gap-8 sm:gap-10"
+                : "space-y-10",
             )}
           >
-            <aside
+            <header className="space-y-6">
+              <div>
+                <h1 className="font-serif text-4xl font-semibold text-forest">
+                  Packages &amp; tours
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm text-stone-700">
+                  Fixed itineraries anchor your dates; add-ons and specialty
+                  experiences layer on the details that matter to you. Enquire via{" "}
+                  <em>Build your journey</em> or WhatsApp for a tailored quote.
+                </p>
+              </div>
+            </header>
+
+            <div
               className={cn(
-                !hasSection && "space-y-6",
                 hasSection &&
-                  "flex flex-col gap-6 lg:h-full lg:min-h-0 lg:border-r lg:border-lagoon/20 lg:pr-8 xl:pr-10",
+                  "lg:grid lg:min-h-[calc(100dvh-var(--navbar-h)-8rem)] lg:grid-cols-[minmax(260px,18rem)_minmax(0,1fr)] lg:items-stretch lg:gap-x-10 xl:gap-x-14",
               )}
             >
-              <h2
-                id="packages-hub-heading"
-                className="font-serif text-xl font-semibold text-forest"
-              >
-                Browse by category
-              </h2>
-
-              {/*
-                Overview: chips drop from above (spring bounce, staggered). Section: full
-                layout morph to compact grid; left column stretches to viewport on lg.
-              */}
-              <div
+              <aside
                 className={cn(
-                  !hasSection
-                    ? "grid gap-4 overflow-hidden sm:grid-cols-2 lg:grid-cols-3"
-                    : "grid w-full grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-1 lg:gap-3 lg:flex-1 lg:auto-rows-min lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2",
+                  !hasSection && "space-y-6",
+                  hasSection &&
+                    "flex flex-col gap-6 lg:h-full lg:min-h-0 lg:border-r lg:border-lagoon/20 lg:pr-8 xl:pr-10",
                 )}
               >
-                {packageSectionDefinitions.map((d, index) => {
-                  const active = section === d.id;
-                  const chipTransition = reduceMotion
-                    ? transition
-                    : {
-                        ...transition,
-                        delay:
-                          staggerChipMotion && section
-                            ? chipLayoutDelaySec(d.id, section)
-                            : 0,
-                      };
-                  const showOverviewDrop = !hasSection && !reduceMotion;
-                  return (
-                    <motion.div
-                      key={
-                        hasSection
-                          ? d.id
-                          : `${d.id}-ov-${overviewEntranceReplay}`
-                      }
-                      layoutId={`pkg-cat-${d.id}`}
-                      layout={hasSection && !reduceMotion}
-                      initial={
-                        showOverviewDrop
-                          ? { opacity: 0, y: "-70vh" }
-                          : false
-                      }
-                      animate={
-                        showOverviewDrop
-                          ? {
-                              opacity: 1,
-                              y: 0,
-                              transition: {
-                                ...overviewDropSpring,
-                                delay: index * OVERVIEW_DROP_STAGGER_SEC,
-                              },
-                            }
-                          : undefined
-                      }
-                      transition={hasSection ? chipTransition : undefined}
-                      whileTap={
-                        reduceMotion
-                          ? undefined
-                          : { scale: 0.94, transition: { duration: 0.12 } }
-                      }
-                      className={cn(
-                        "min-w-0 origin-center",
-                        hasSection && "w-full",
-                      )}
-                    >
-                      <Link
-                        href={packagesSectionHref(d.id)}
-                        scroll={false}
-                        onClick={() => setStaggerCategoryLayout(true)}
-                        className={categoryNavLinkClass({
-                          hasSection,
-                          active,
-                        })}
-                      >
-                        {d.label}
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </aside>
-
-            {hasSection ? (
-              <div className="min-w-0 overflow-x-hidden lg:min-h-0">
-                <AnimatePresence
-                  mode="wait"
-                  initial={false}
-                  custom={sectionPanelSlideDir}
+                <h2
+                  id="packages-hub-heading"
+                  className="font-serif text-xl font-semibold text-forest"
                 >
-                  {hasSection && meta ? (
-                    <motion.div
-                      key={section}
-                      role="region"
-                      aria-label={meta.pageTitle}
-                      custom={sectionPanelSlideDir}
-                      variants={sectionPanelVariants}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                      className="space-y-10"
-                    >
-                      <header>
-                        <h1 className="font-serif text-3xl font-semibold text-forest sm:text-4xl">
-                          {meta.pageTitle}
-                        </h1>
-                        <p className="mt-3 max-w-2xl text-sm text-stone-700">
-                          {meta.pageDescription}
-                        </p>
-                      </header>
-                      <div className="flex flex-col gap-14">
-                        {tours.map((tour, index) => (
-                          <FixedPackagePanel
-                            key={tour.id}
-                            tour={tour}
-                            index={index}
-                            cardClassName={packagesGreenCard}
-                            placeholderClassName={packagesGreenPlaceholder}
-                            slideshowClassName={packagesGreenSlideshow}
-                            verticallyCenterCardContent
-                            alignTextTowardImages
-                            previewMaxImages={2}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </div>
+                  Browse by category
+                </h2>
+
+                {/*
+                  Overview: chips drop from above (spring bounce, staggered). Section: full
+                  layout morph to compact grid; left column stretches to viewport on lg.
+                */}
+                <div
+                  className={cn(
+                    !hasSection
+                      ? "grid gap-5 overflow-hidden sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
+                      : "grid w-full grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-1 lg:gap-3 lg:flex-1 lg:auto-rows-min lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2",
+                  )}
+                >
+                  {packageSectionDefinitions.map((d, index) => {
+                    const active = section === d.id;
+                    const chipTransition = reduceMotion
+                      ? transition
+                      : {
+                          ...transition,
+                          delay:
+                            staggerChipMotion && section
+                              ? chipLayoutDelaySec(d.id, section)
+                              : 0,
+                        };
+                    const showOverviewDrop = !hasSection && !reduceMotion;
+                    return (
+                      <motion.div
+                        key={
+                          hasSection
+                            ? d.id
+                            : `${d.id}-ov-${overviewEntranceReplay}`
+                        }
+                        layoutId={`pkg-cat-${d.id}`}
+                        layout={hasSection && !reduceMotion}
+                        initial={
+                          showOverviewDrop
+                            ? { opacity: 0, y: "-70vh" }
+                            : false
+                        }
+                        animate={
+                          showOverviewDrop
+                            ? {
+                                opacity: 1,
+                                y: 0,
+                                transition: {
+                                  ...overviewDropSpring,
+                                  delay: index * OVERVIEW_DROP_STAGGER_SEC,
+                                },
+                              }
+                            : undefined
+                        }
+                        transition={hasSection ? chipTransition : undefined}
+                        whileTap={
+                          reduceMotion
+                            ? undefined
+                            : { scale: 0.94, transition: { duration: 0.12 } }
+                        }
+                        className={cn(
+                          "min-w-0 origin-center",
+                          hasSection ? "w-full" : "h-full min-h-0",
+                        )}
+                      >
+                        <Link
+                          href={packagesSectionHref(d.id)}
+                          scroll={false}
+                          onClick={() => setStaggerCategoryLayout(true)}
+                          className={categoryNavLinkClass({
+                            hasSection,
+                            active,
+                          })}
+                        >
+                          {d.label}
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </aside>
+
+              {hasSection ? (
+                <div className="min-w-0 overflow-x-hidden lg:min-h-0">
+                  <AnimatePresence
+                    mode="wait"
+                    initial={false}
+                    custom={sectionPanelSlideDir}
+                  >
+                    {hasSection && meta ? (
+                      <motion.div
+                        key={section}
+                        role="region"
+                        aria-label={meta.pageTitle}
+                        custom={sectionPanelSlideDir}
+                        variants={sectionPanelVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        className="space-y-10"
+                      >
+                        <header>
+                          <h1 className="font-serif text-3xl font-semibold text-forest sm:text-4xl">
+                            {meta.pageTitle}
+                          </h1>
+                          <p className="mt-3 max-w-2xl text-sm text-stone-700">
+                            {meta.pageDescription}
+                          </p>
+                        </header>
+                        <div className="flex flex-col gap-14">
+                          {tours.map((tour, index) => (
+                            <FixedPackagePanel
+                              key={tour.id}
+                              tour={tour}
+                              index={index}
+                              cardClassName={packagesGreenCard}
+                              placeholderClassName={packagesGreenPlaceholder}
+                              slideshowClassName={packagesGreenSlideshow}
+                              verticallyCenterCardContent
+                              alignTextTowardImages
+                              previewMaxImages={2}
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
+              ) : null}
+            </div>
+
+            {!hasSection ? (
+              <>
+                <div className="min-h-4 w-full flex-1" aria-hidden />
+                <figure className="relative mt-2 h-[min(36vh,26rem)] w-full shrink-0 overflow-hidden rounded-2xl border border-lagoon/25 bg-white/40 shadow-md sm:h-[min(40vh,30rem)] sm:rounded-3xl">
+                  <Image
+                    src="/images/p_overview.jpg"
+                    alt="Scenic view — packages and tours overview"
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1152px) 92vw, 1152px"
+                  />
+                </figure>
+              </>
             ) : null}
           </div>
         </LayoutGroup>
