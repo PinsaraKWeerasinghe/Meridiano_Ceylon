@@ -1,44 +1,44 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import Link from "next/link";
-import { PackageBookingForm } from "@/components/tours/PackageBookingForm";
+import { Suspense } from "react";
+import { PackageBookingCheckout } from "@/components/tours/PackageBookingCheckout";
 
 export const metadata: Metadata = {
-  title: "Book a package",
+  title: "Billing & payment",
   description:
-    "Confirm traveller and package details, then complete billing and payment.",
+    "Review your package booking, confirm billing details, and pay securely.",
 };
 
-function BookFormFallback() {
+function CheckoutFallback() {
   return (
     <div className="rounded-xl border border-lagoon/20 bg-white/60 px-6 py-12 text-center text-sm text-stone-600">
-      Loading form…
+      Loading checkout…
     </div>
   );
 }
 
-export default function PackageBookPage() {
+export default function PackageBookCheckoutPage() {
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-2xl">
         <Link
-          href="/packages"
+          href="/packages/book"
           className="text-sm font-semibold text-lagoon underline-offset-4 transition hover:text-lagoon/80 hover:underline"
         >
-          ← Packages &amp; tours
+          ← Booking form
         </Link>
         <h1 className="mt-6 font-serif text-3xl font-semibold text-forest sm:text-4xl">
-          Book now
+          Billing &amp; payment
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-stone-700">
-          Tell us who is travelling, which package you want, and any add-ons.
-          After you confirm, you&apos;ll review billing details and Terms &amp;
-          Conditions before paying securely.
+          Confirm your traveller details below, fill in billing information,
+          agree to our policies, then continue to PayHere when your merchant
+          account is configured.
         </p>
 
         <div className="mt-10">
-          <Suspense fallback={<BookFormFallback />}>
-            <PackageBookingForm />
+          <Suspense fallback={<CheckoutFallback />}>
+            <PackageBookingCheckout />
           </Suspense>
         </div>
       </div>

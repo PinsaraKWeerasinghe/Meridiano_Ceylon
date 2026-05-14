@@ -1,24 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
 import { Card } from "@/components/ui/Card";
 import { addonTours, allTours } from "@/data/tours";
 import { getTourDetailBySlug } from "@/data/tour-detail-content";
 import {
-  computeBookingBillBreakdown,
-  formatBookingBillWhatsAppLines,
-} from "@/lib/package-booking-bill";
+  PACKAGE_BOOKING_DRAFT_STORAGE_KEY,
+  type PackageBookingDraftV1,
+} from "@/lib/package-booking-draft";
+import { computeBookingBillBreakdown } from "@/lib/package-booking-bill";
 import { appendUserBooking } from "@/lib/user-bookings";
+import { fetchUserProfile } from "@/lib/user-profile";
 import { cn } from "@/lib/utils";
-import {
-  buildPackageBookingWhatsAppMessage,
-  getWhatsAppNumber,
-  openWhatsAppWithText,
-  type PackageBookingPartner,
-} from "@/utils/whatsapp";
+import { type PackageBookingPartner } from "@/utils/whatsapp";
 
 function slugFromDetailPath(path: string): string {
   return path.replace(/^\/packages\//, "");
@@ -37,7 +34,19 @@ function tourForPackageSlug(slug: string) {
   );
 }
 
+/** Mirrors profile form: split Auth displayName when Firestore names are empty. */
+function splitDisplayName(displayName: string | null | undefined): {
+  firstName: string;
+  lastName: string;
+} {
+  if (!displayName?.trim()) return { firstName: "", lastName: "" };
+  const parts = displayName.trim().split(/\s+/);
+  if (parts.length === 1) return { firstName: parts[0]!, lastName: "" };
+  return { firstName: parts[0]!, lastName: parts.slice(1).join(" ") };
+}
+
 export function PackageBookingForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { user, ready: authReady } = useAuthUser();
 
@@ -50,6 +59,9 @@ export function PackageBookingForm() {
     if (q && getTourDetailBySlug(q)) setPackageSlug(q);
   }, [searchParams]);
 
+  const checkoutSessionMissing =
+    searchParams.get("checkout") === "missing";
+
   const [primaryName, setPrimaryName] = useState("");
   const [primaryPassport, setPrimaryPassport] = useState("");
   const [primaryGender, setPrimaryGender] = useState<"male" | "female" | "">(
@@ -61,6 +73,61 @@ export function PackageBookingForm() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!authReady || !user?.uid) return;
+
+    const uid = user.uid;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const doc = await fetchUserProfile(uid);
+        if (cancelled) return;
+
+        const authParts = splitDisplayName(user.displayName);
+        const docFirst = doc?.firstName?.trim() ?? "";
+        const docLast = doc?.lastName?.trim() ?? "";
+        const firstName = docFirst || authParts.firstName;
+        const lastName = docLast || authParts.lastName;
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+        const passport = doc?.passportId?.trim() ?? "";
+        const contact =
+          doc?.phone?.trim() ||
+          (user.phoneNumber ? user.phoneNumber.trim() : "") ||
+          "";
+        const gender =
+          doc?.gender === "male" || doc?.gender === "female"
+            ? doc.gender
+            : "";
+
+        setPrimaryName((prev) => (prev.trim() === "" ? fullName : prev));
+        setPrimaryPassport((prev) => (prev.trim() === "" ? passport : prev));
+        setPhone((prev) => (prev.trim() === "" ? contact : prev));
+        setPrimaryGender((prev) => {
+          if (prev !== "") return prev;
+          return gender;
+        });
+      } catch {
+        if (cancelled) return;
+        const authParts = splitDisplayName(user.displayName);
+        const fullName = [authParts.firstName, authParts.lastName]
+          .filter(Boolean)
+          .join(" ");
+        setPrimaryName((prev) => (prev.trim() === "" ? fullName : prev));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authReady,
+    user?.uid,
+    user?.displayName,
+    user?.phoneNumber,
+  ]);
 
   useEffect(() => {
     if (tourForPackageSlug(packageSlug)?.kind === "specialty") {
@@ -170,35 +237,26 @@ export function PackageBookingForm() {
       });
     }
 
-    if (!getWhatsAppNumber()) {
-      setError(
-        "WhatsApp number is not configured. Add NEXT_PUBLIC_WHATSAPP_NUMBER to your environment.",
-      );
-      return;
-    }
-
     const selectedTour = selectedPackageTour;
     const addonTitles =
       selectedTour?.kind === "specialty"
         ? []
         : addonTours.filter((a) => addonIds.has(a.id)).map((a) => a.title);
 
-    const estimatedBillLines =
-      billBreakdown != null
-        ? formatBookingBillWhatsAppLines(billBreakdown)
-        : undefined;
-
-    const text = buildPackageBookingWhatsAppMessage({
+    const draft: PackageBookingDraftV1 = {
+      v: 1,
+      packageSlug,
+      packageTitle: selectedTitle,
       primaryName: primaryName.trim(),
       primaryPassport: primaryPassport.trim(),
       primaryGender,
       partners: filledPartners,
-      packageTitle: selectedTitle,
       phone: phone.trim(),
-      selectedAddonTitles: addonTitles,
+      addonIds: Array.from(addonIds),
+      addonTitles,
       notes,
-      estimatedBillLines,
-    });
+      billBreakdown: billBreakdown,
+    };
 
     setSubmitting(true);
     try {
@@ -212,7 +270,11 @@ export function PackageBookingForm() {
           flashDealDocId: "",
         });
       }
-      openWhatsAppWithText(text);
+      sessionStorage.setItem(
+        PACKAGE_BOOKING_DRAFT_STORAGE_KEY,
+        JSON.stringify(draft),
+      );
+      router.push("/packages/book/checkout");
     } catch (err) {
       setError(
         err instanceof Error
@@ -226,6 +288,12 @@ export function PackageBookingForm() {
 
   return (
     <Card className="border-lagoon/25 p-6 shadow-sm shadow-lagoon/10 sm:p-8">
+      {checkoutSessionMissing ? (
+        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
+          Your checkout session expired or was cleared. Confirm your booking
+          again to continue.
+        </p>
+      ) : null}
       <form onSubmit={handleSubmit} className="space-y-8">
         <fieldset>
           <legend className="text-sm font-semibold text-forest">Package</legend>
@@ -602,7 +670,7 @@ export function PackageBookingForm() {
             submitting && "opacity-60",
           )}
         >
-          {submitting ? "Saving…" : "Confirm & send to WhatsApp"}
+          {submitting ? "Saving…" : "Confirm Booking"}
         </button>
       </form>
     </Card>
