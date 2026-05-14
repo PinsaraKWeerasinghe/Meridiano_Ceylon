@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
 import { Card } from "@/components/ui/Card";
 import { addonTours, allTours } from "@/data/tours";
-import { getTourDetailBySlug } from "@/data/tour-detail-content";
 import {
   PACKAGE_BOOKING_DRAFT_STORAGE_KEY,
   type PackageBookingDraftV1,
@@ -20,13 +19,6 @@ import { type PackageBookingPartner } from "@/utils/whatsapp";
 function slugFromDetailPath(path: string): string {
   return path.replace(/^\/packages\//, "");
 }
-
-const packageChoices = allTours
-  .filter((t) => t.detailPath)
-  .map((t) => ({
-    slug: slugFromDetailPath(t.detailPath!),
-    label: t.title,
-  }));
 
 function tourForPackageSlug(slug: string) {
   return allTours.find(
@@ -50,14 +42,11 @@ export function PackageBookingForm() {
   const searchParams = useSearchParams();
   const { user, ready: authReady } = useAuthUser();
 
-  const [packageSlug, setPackageSlug] = useState(
-    () => packageChoices[0]?.slug ?? "",
-  );
-
-  useEffect(() => {
-    const q = searchParams.get("package");
-    if (q && getTourDetailBySlug(q)) setPackageSlug(q);
-  }, [searchParams]);
+  const rawPackageQuery = searchParams.get("package");
+  const packageSlug = useMemo(() => {
+    const q = rawPackageQuery?.trim() ?? "";
+    return tourForPackageSlug(q) ? q : "";
+  }, [rawPackageQuery]);
 
   const checkoutSessionMissing =
     searchParams.get("checkout") === "missing";
@@ -135,8 +124,7 @@ export function PackageBookingForm() {
     }
   }, [packageSlug]);
 
-  const selectedTitle =
-    packageChoices.find((p) => p.slug === packageSlug)?.label ?? "";
+  const selectedTitle = tourForPackageSlug(packageSlug)?.title ?? "";
 
   const selectedPackageTour = tourForPackageSlug(packageSlug);
 
@@ -211,7 +199,9 @@ export function PackageBookingForm() {
       return;
     }
     if (!packageSlug || !selectedTitle) {
-      setError("Please select a package.");
+      setError(
+        "No package linked to this page. Choose a tour and open Book again from its page.",
+      );
       return;
     }
 
@@ -294,25 +284,35 @@ export function PackageBookingForm() {
           again to continue.
         </p>
       ) : null}
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <fieldset>
-          <legend className="text-sm font-semibold text-forest">Package</legend>
-          <label className="mt-3 block text-sm text-stone-600">
-            Selected tour / package
-            <select
-              value={packageSlug}
-              onChange={(e) => setPackageSlug(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
-              required
+      {!packageSlug ? (
+        <div className="space-y-4 text-sm text-stone-700">
+          <p>
+            Bookings start from a specific package. Open any tour on{" "}
+            <Link
+              href="/packages"
+              className="font-semibold text-lagoon underline-offset-2 hover:underline"
             >
-              {packageChoices.map((p) => (
-                <option key={p.slug} value={p.slug}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </fieldset>
+              Packages &amp; tours
+            </Link>{" "}
+            and use <span className="font-medium text-forest">Book now</span>{" "}
+            there so this form knows which itinerary you want.
+          </p>
+          {rawPackageQuery?.trim() ? (
+            <p className="text-xs text-stone-500">
+              The link you used does not match a bookable package. Try again
+              from a package detail page.
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <fieldset>
+            <legend className="text-sm font-semibold text-forest">Package</legend>
+            <p className="mt-1 text-xs text-stone-500">You are booking</p>
+            <p className="mt-2 rounded-xl border border-lagoon/25 bg-white/90 px-4 py-4 font-serif text-lg font-semibold leading-snug text-forest shadow-sm sm:text-xl">
+              {selectedTitle}
+            </p>
+          </fieldset>
 
         <fieldset>
           <legend className="text-sm font-semibold text-forest">
@@ -646,7 +646,9 @@ export function PackageBookingForm() {
         {authReady && !user ? (
           <p className="text-xs text-stone-500">
             <Link
-              href="/login?next=/packages/book"
+              href={`/login?next=${encodeURIComponent(
+                `/packages/book?package=${packageSlug}`,
+              )}`}
               className="font-semibold text-lagoon underline-offset-2 hover:underline"
             >
               Sign in
@@ -672,7 +674,8 @@ export function PackageBookingForm() {
         >
           {submitting ? "Saving…" : "Confirm Booking"}
         </button>
-      </form>
+        </form>
+      )}
     </Card>
   );
 }
