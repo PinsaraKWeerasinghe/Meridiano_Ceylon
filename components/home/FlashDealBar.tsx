@@ -15,14 +15,114 @@ function pad2(n: number) {
   return n.toString().padStart(2, "0");
 }
 
-function formatRemaining(ms: number) {
+type RemainingParts = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+};
+
+function getRemainingParts(ms: number): RemainingParts {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
   const days = Math.floor(totalSec / 86400);
   const restAfterDays = totalSec % 86400;
-  const h = Math.floor(restAfterDays / 3600);
-  const m = Math.floor((restAfterDays % 3600) / 60);
-  const s = restAfterDays % 60;
-  return `${days}:${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  const hours = Math.floor(restAfterDays / 3600);
+  const minutes = Math.floor((restAfterDays % 3600) / 60);
+  const seconds = restAfterDays % 60;
+  return { days, hours, minutes, seconds };
+}
+
+function FlashDealCountdownMobile({
+  parts,
+  loading,
+}: {
+  parts: RemainingParts | null;
+  loading: boolean;
+}) {
+  const segments: { label: string; value: string }[] = loading
+    ? [
+        { label: "Days", value: "—" },
+        { label: "Hours", value: "—" },
+        { label: "Minutes", value: "—" },
+        { label: "Seconds", value: "—" },
+      ]
+    : parts
+      ? [
+          { label: "Days", value: String(parts.days) },
+          { label: "Hours", value: pad2(parts.hours) },
+          { label: "Minutes", value: pad2(parts.minutes) },
+          { label: "Seconds", value: pad2(parts.seconds) },
+        ]
+      : [
+          { label: "Days", value: "—" },
+          { label: "Hours", value: "—" },
+          { label: "Minutes", value: "—" },
+          { label: "Seconds", value: "—" },
+        ];
+
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 tabular-nums">
+      {segments.map((seg, i) => (
+        <span key={seg.label} className="inline-flex items-baseline gap-1">
+          {i > 0 ? (
+            <span className="text-neutral-600" aria-hidden>
+              ·
+            </span>
+          ) : null}
+          <span className="font-medium text-neutral-500">{seg.label}</span>
+          <span className="font-semibold text-amber-300">{seg.value}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function FlashDealCountdownCard({
+  parts,
+  loading,
+}: {
+  parts: RemainingParts | null;
+  loading: boolean;
+}) {
+  const cells: { label: string; value: string }[] = loading
+    ? [
+        { label: "Days", value: "—" },
+        { label: "Hours", value: "—" },
+        { label: "Minutes", value: "—" },
+        { label: "Seconds", value: "—" },
+      ]
+    : parts
+      ? [
+          { label: "Days", value: String(parts.days) },
+          { label: "Hours", value: pad2(parts.hours) },
+          { label: "Minutes", value: pad2(parts.minutes) },
+          { label: "Seconds", value: pad2(parts.seconds) },
+        ]
+      : [
+          { label: "Days", value: "—" },
+          { label: "Hours", value: "—" },
+          { label: "Minutes", value: "—" },
+          { label: "Seconds", value: "—" },
+        ];
+
+  return (
+    <div
+      className="grid grid-cols-4 gap-2 rounded-lg bg-neutral-900/80 px-2 py-2"
+      aria-live="polite"
+      aria-label="Time remaining until deal closes"
+    >
+      {cells.map((c) => (
+        <div key={c.label} className="flex min-w-0 flex-col items-center gap-0.5 text-center">
+          <span className="w-full truncate text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+            {c.label}
+          </span>
+          <span className="tabular-nums text-base font-bold leading-none text-amber-300 md:text-lg">
+            {c.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function availabilityPercentRemaining(
@@ -82,8 +182,9 @@ function FlashDealBarChrome({
     return null;
   }
 
-  const timerDisplay =
-    now === null ? "—:—:—:—" : formatRemaining(remainingMs);
+  const remainingParts =
+    now === null ? null : getRemainingParts(remainingMs);
+
   const pctLeft =
     config.maxSlots >= 1
       ? slotAvailabilityPercent(config.maxSlots, config.slotsTaken)
@@ -129,9 +230,10 @@ function FlashDealBarChrome({
             <span className="text-neutral-500" aria-hidden>
               ·
             </span>
-            <span className="tabular-nums font-semibold text-amber-300">
-              {timerDisplay}
-            </span>
+            <FlashDealCountdownMobile
+              parts={remainingParts}
+              loading={now === null}
+            />
             <span className="text-neutral-500" aria-hidden>
               ·
             </span>
@@ -190,7 +292,7 @@ function FlashDealBarChrome({
               <X className="h-4 w-4" aria-hidden strokeWidth={2} />
             </button>
           </div>
-          <p className="text-xs font-semibold leading-snug text-white">
+          <p className="text-base font-semibold leading-snug text-white md:text-lg">
             {config.title}
           </p>
 
@@ -198,17 +300,18 @@ function FlashDealBarChrome({
             dateTime={config.dealDate}
             className="text-[11px] font-medium text-neutral-400"
           >
-            Deal date:{" "}
+            Closing date:{" "}
             <span className="text-amber-200">{dateLabel}</span>
           </time>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
               Ends in
             </span>
-            <span className="tabular-nums text-base font-bold tracking-wide text-amber-300 md:text-lg">
-              {timerDisplay}
-            </span>
+            <FlashDealCountdownCard
+              parts={remainingParts}
+              loading={now === null}
+            />
           </div>
 
           <div>

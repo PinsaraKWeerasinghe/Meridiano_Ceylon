@@ -238,7 +238,7 @@ export function FlashDealDetailPageClient() {
           {detail.title.trim() ? detail.title : emptyCell()}
         </h1>
         <p className="text-sm text-stone-600">
-          <span className="font-semibold text-forest">Deal date:</span>{" "}
+          <span className="font-semibold text-forest">Closing date:</span>{" "}
           {detail.dealDate ? (
             <time dateTime={detail.dealDate}>{dateLabel}</time>
           ) : (
@@ -382,7 +382,7 @@ export function FlashDealDetailPageClient() {
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <p className="text-xs text-stone-500">Deal date</p>
+                        <p className="text-xs text-stone-500">Closing date</p>
                         <p className="font-semibold tabular-nums text-forest">
                           <time dateTime={detail.dealDate}>{dateLabel}</time>
                         </p>
