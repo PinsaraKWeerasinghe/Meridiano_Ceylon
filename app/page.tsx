@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FlashDealBar } from "@/components/home/FlashDealBar";
 import { Hero } from "@/components/home/Hero";
 import { BuildJourneyForm } from "@/components/home/BuildJourneyForm";
+import { HomeSocialLinks } from "@/components/home/HomeSocialLinks";
 import { HomeAddonsSection } from "@/components/home/HomeAddonsSection";
 import { TrustPilotReviewsSection } from "@/components/home/TrustPilotReviewsSection";
 import { FixedPackagePanel } from "@/components/tours/FixedPackagePanel";
@@ -105,6 +106,8 @@ export default function HomePage() {
       </section>
 
       <TrustPilotReviewsSection />
+
+      <HomeSocialLinks />
     </>
   );
 }
