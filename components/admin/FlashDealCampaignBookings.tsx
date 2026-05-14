@@ -75,7 +75,7 @@ export function FlashDealCampaignBookings({
         <p className="px-4 py-6 text-sm text-red-800 sm:px-6">
           Could not load bookings: {listenError}
           <span className="mt-2 block text-xs text-stone-600">
-            Check Firestore rules allow admin read on{" "}
+            Check security rules for your data source allow admin read on{" "}
             <code className="rounded bg-stone-100 px-1">
               flashDeals/&#123;deal&#125;/Travellers
             </code>

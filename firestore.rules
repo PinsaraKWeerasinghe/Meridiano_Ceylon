@@ -50,7 +50,7 @@ service cloud.firestore {
           || request.resource.data.lastModifiedByEmail == resource.data.lastModifiedByEmail);
     }
 
-    /** Firestore often stores JS numbers as floats; accept int or whole floats. */
+    /** The data source often stores JS numbers as floats; accept int or whole floats. */
     function maxSlotsIsPositive(data) {
       return (data.maxSlots is int || data.maxSlots is float)
         && data.maxSlots >= 1;

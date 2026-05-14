@@ -18,7 +18,7 @@ import {
 import { colomboDayBoundsMs } from "@/lib/flash-deal-colombo";
 import { getFirestoreDb } from "@/lib/firebase/db";
 
-/** Campaign documents (admin CMS); matches Firestore rules `flashDeals/{docId}`. */
+/** Campaign documents (admin CMS); matches security rules for `flashDeals/{docId}`. */
 export const FLASH_DEALS_COLLECTION = "flashDeals";
 
 /**
@@ -58,7 +58,7 @@ export type FlashDealSettingsInput = {
   perPersonCharge: string;
   /**
    * Minimum number of traveller bookings (slots) required before the flash deal
-   * may proceed. Stored as digits only in Firestore under the field name `groupSize`.
+   * may proceed. Stored as digits only in the data source under the field name `groupSize`.
    */
   groupSize: string;
   hotelLevel: string;
@@ -340,7 +340,7 @@ function docSortMs(data: Record<string, unknown>): number {
 
 /**
  * Normalizes admin / legacy USD amounts: strips `$` and commas, validates a
- * positive amount, returns a canonical digit string for Firestore (no `$`).
+ * positive amount, returns a canonical digit string for the data source (no `$`).
  * Used for per-person charge and registration price.
  */
 export function normalizeUsdAmountDigitsForSave(raw: string): string | null {
@@ -354,7 +354,7 @@ export function normalizeUsdAmountDigitsForSave(raw: string): string | null {
 
 /**
  * Minimum slots (bookings) before the deal may proceed. Stored in `groupSize`
- * in Firestore (digit string only).
+ * in the data source (digit string only).
  */
 export function normalizeMinSlotsProceedForSave(raw: string): string | null {
   const t = raw.trim();
@@ -701,7 +701,7 @@ export async function saveFlashDealSettings(
 
 /**
  * Hard-delete a campaign document. The `Travellers` subcollection is intentionally
- * left in place — Firestore client SDK does not cascade, and rules block clients
+ * left in place — the data source client SDK does not cascade, and rules block clients
  * from deleting historic booking records.
  */
 export async function deleteFlashDealForAdmin(dealId: string): Promise<void> {

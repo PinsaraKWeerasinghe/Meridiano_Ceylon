@@ -62,7 +62,7 @@ function displayDetailText(raw: string): string {
   return s.length > 0 ? s : emptyCell();
 }
 
-/** `groupSize` in Firestore: digit string = minimum bookings to proceed; else legacy copy. */
+/** `groupSize` in the data source: digit string = minimum bookings to proceed; else legacy copy. */
 function displayMinSlotsToProceed(raw: string): string {
   const t = raw.trim();
   if (!t) return emptyCell();

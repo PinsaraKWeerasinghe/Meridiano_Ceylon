@@ -27,7 +27,7 @@ export function formatAuthError(code: string | undefined): string {
     case "auth/popup-blocked":
       return "Pop-up was blocked. Allow pop-ups for this site and try again.";
     case "permission-denied":
-      return "Permission denied. Check Firebase security rules for Firestore or Storage.";
+      return "Permission denied. Check Firebase security rules for your data source or Storage.";
     case "auth/requires-recent-login":
       return "For security, sign out, sign in again, then try once more.";
     default:

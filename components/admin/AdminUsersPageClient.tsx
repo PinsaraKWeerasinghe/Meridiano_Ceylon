@@ -45,7 +45,7 @@ export function AdminUsersPageClient() {
       setRows(list);
     } catch {
       setError(
-        "Could not load users. Check Firestore rules and your connection.",
+        "Could not load users. Check security rules for your data source and your connection.",
       );
       setRows([]);
     } finally {
@@ -88,7 +88,9 @@ export function AdminUsersPageClient() {
           return;
         }
       } catch {
-        setError("Could not update role. Check Firestore rules and try again.");
+        setError(
+          "Could not update role. Check security rules for your data source and try again.",
+        );
       } finally {
         setSavingUid(null);
       }
@@ -157,7 +159,7 @@ export function AdminUsersPageClient() {
     <Card className="border-lagoon/25 overflow-hidden p-0 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gold/15 bg-white px-4 py-3 sm:px-6">
         <p className="text-sm text-stone-600">
-          Choose a role for each user below. Values are stored in Firestore on{" "}
+          Choose a role for each user below. Values are stored in the data source on{" "}
           <code className="rounded bg-stone-100 px-1 text-xs">users</code>{" "}
           as{" "}
           <code className="text-xs">traveler</code>,{" "}

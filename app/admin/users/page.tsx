@@ -21,7 +21,7 @@ export default function AdminUsersPage() {
           Users
         </h1>
         <p className="mt-2 text-sm text-stone-600">
-          Email, role, created and last modified times from Firestore. New
+          Email, role, created and last modified times from the data source. New
           accounts default to Traveller.
         </p>
         <div className="mt-10">

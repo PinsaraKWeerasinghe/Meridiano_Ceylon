@@ -79,7 +79,7 @@ export function AdminFlashDealPageClient() {
   >([{ ...EMPTY_ITINERARY_SNAP }]);
 
   const [meta, setMeta] = useState<FlashDealAdminMeta | null>(null);
-  /** `null` = new unsaved draft (next save allocates a Firestore doc id). */
+  /** `null` = new unsaved draft (next save allocates a data source doc id). */
   const [editingDealId, setEditingDealId] = useState<string | null>(null);
   const [dealList, setDealList] = useState<FlashDealListRow[]>([]);
 
@@ -92,6 +92,7 @@ export function AdminFlashDealPageClient() {
   const [deleteToken, setDeleteToken] = useState("");
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const deleteDialogRef = useRef<HTMLDialogElement | null>(null);
 
   const applyValuesToForm = useCallback((values: FlashDealSettingsInput) => {
     setTitle(values.title);
@@ -119,7 +120,7 @@ export function AdminFlashDealPageClient() {
     setDeleteToken("");
   }, []);
 
-  const reloadDealFromFirestore = useCallback(async (dealId: string | null) => {
+  const reloadDealFromDataSource = useCallback(async (dealId: string | null) => {
     reloadTicketRef.current += 1;
     const ticket = reloadTicketRef.current;
     setError(null);
@@ -163,6 +164,16 @@ export function AdminFlashDealPageClient() {
     setSavedOk(false);
   }
 
+  useEffect(() => {
+    const el = deleteDialogRef.current;
+    if (!el) return;
+    if (deletePromptOpen && editingDealId) {
+      if (!el.open) el.showModal();
+    } else if (el.open) {
+      el.close();
+    }
+  }, [deletePromptOpen, editingDealId]);
+
   async function handleConfirmDelete() {
     if (!editingDealId) return;
     if (deleteInput.trim() !== deleteToken) return;
@@ -203,11 +214,11 @@ export function AdminFlashDealPageClient() {
         if (cancelled) return;
         setDealList(rows);
         if (rows.length === 0) {
-          await reloadDealFromFirestore(null);
+          await reloadDealFromDataSource(null);
         } else {
           const pick =
             rows.find((r) => r.isFeatured)?.id ?? rows[0]?.id ?? null;
-          await reloadDealFromFirestore(pick);
+          await reloadDealFromDataSource(pick);
         }
       } catch {
         if (!cancelled) {
@@ -219,7 +230,7 @@ export function AdminFlashDealPageClient() {
     return () => {
       cancelled = true;
     };
-  }, [authReady, roleReady, adminUid, role, reloadDealFromFirestore]);
+  }, [authReady, roleReady, adminUid, role, reloadDealFromDataSource]);
 
   function updateSnap(index: number, patch: Partial<FlashDealItinerarySnap>) {
     setItinerarySnaps((prev) => {
@@ -284,7 +295,7 @@ export function AdminFlashDealPageClient() {
       );
       setSavedOk(true);
       setDealList(await listFlashDealsForAdmin());
-      await reloadDealFromFirestore(dealId);
+      await reloadDealFromDataSource(dealId);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not save. Try again.",
@@ -351,6 +362,14 @@ export function AdminFlashDealPageClient() {
     );
   }
 
+  const deleteConfirmDealTitle =
+    title.trim() ||
+    (editingDealId
+      ? (dealList.find((r) => r.id === editingDealId)?.title ?? "").trim()
+      : ""
+    ).trim() ||
+    "(Untitled)";
+
   return (
     <>
     <Card className="border-lagoon/25 p-6 shadow-sm shadow-lagoon/10 sm:p-8">
@@ -374,7 +393,7 @@ export function AdminFlashDealPageClient() {
                 onChange={(e) => {
                   const v = e.target.value;
                   if (v === "__new__") startNewDraft();
-                  else void reloadDealFromFirestore(v);
+                  else void reloadDealFromDataSource(v);
                 }}
                 className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
               >
@@ -716,7 +735,7 @@ export function AdminFlashDealPageClient() {
             </p>
           )}
 
-          {error ? (
+          {error && !deletePromptOpen ? (
             <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">
               {error}
             </p>
@@ -751,71 +770,95 @@ export function AdminFlashDealPageClient() {
               </button>
             ) : null}
           </div>
-
-          {deletePromptOpen && editingDealId ? (
-            <div className="rounded-xl border border-red-300 bg-red-50/70 px-4 py-4 text-sm text-red-900">
-              <p className="font-semibold text-red-800">
-                Confirm permanent deletion
-              </p>
-              <p className="mt-1 text-red-900/90">
-                This removes{" "}
-                <code className="rounded bg-white/80 px-1 text-xs text-red-900">
-                  {FLASH_DEALS_COLLECTION}/{editingDealId}
-                </code>{" "}
-                from Firestore. The Travellers history under it is kept as an
-                audit trail and cannot be reached from the picker any more.
-              </p>
-              <p className="mt-3 text-red-900/90">
-                Type the code below to confirm — the form will reset to a new
-                draft.
-              </p>
-              <p className="mt-2 select-all rounded-lg border border-red-300 bg-white px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-red-800">
-                {deleteToken}
-              </p>
-              <label className="mt-3 block text-xs font-medium text-red-900">
-                Type the code
-                <input
-                  type="text"
-                  value={deleteInput}
-                  onChange={(e) =>
-                    setDeleteInput(e.target.value.toUpperCase())
-                  }
-                  autoComplete="off"
-                  spellCheck={false}
-                  inputMode="text"
-                  maxLength={DELETE_TOKEN_LENGTH}
-                  className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 font-mono tracking-[0.4em] text-red-900 outline-none ring-red-300/40 focus:ring-2"
-                />
-              </label>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => void handleConfirmDelete()}
-                  disabled={
-                    deleting ||
-                    deleteInput.trim() !== deleteToken ||
-                    !editingDealId
-                  }
-                  className={cn(
-                    "rounded-full bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50",
-                  )}
-                >
-                  {deleting ? "Deleting…" : "Yes, delete this deal"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeDeletePrompt}
-                  disabled={deleting}
-                  className="rounded-full border border-red-300 bg-white px-6 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : null}
         </form>
       )}
     </Card>
+
+    <dialog
+      ref={deleteDialogRef}
+      onClose={closeDeletePrompt}
+      className={cn(
+        "max-h-[min(calc(100dvh-2rem),42rem)] w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-red-200 bg-white p-6 text-sm text-red-950 shadow-xl",
+        "[&::backdrop]:bg-black/45 [&::backdrop]:backdrop-blur-[1px]",
+      )}
+      aria-labelledby="flash-deal-delete-title"
+    >
+      {deletePromptOpen && editingDealId ? (
+        <>
+          <p
+            id="flash-deal-delete-title"
+            className="font-semibold text-lg text-red-800"
+          >
+            Confirm permanent deletion
+          </p>
+          <p className="mt-4 rounded-xl border-2 border-red-400 bg-red-50 px-4 py-4 text-center text-xl font-bold leading-snug tracking-tight text-red-950 shadow-sm sm:text-2xl">
+            {deleteConfirmDealTitle}
+          </p>
+          <p className="mt-4 text-red-900/90">
+            This removes{" "}
+            <code className="rounded bg-red-50 px-1 font-mono text-xs text-red-900">
+              {FLASH_DEALS_COLLECTION}/{editingDealId}
+            </code>{" "}
+            from the data source. Traveller records under this campaign remain as an
+            audit trail.
+          </p>
+          <p className="mt-3 text-red-900/90">
+            Type the code below to confirm.
+          </p>
+          <p className="mt-3 select-all rounded-lg border border-red-300 bg-red-50/80 px-3 py-2.5 text-center font-mono text-lg tracking-[0.35em] text-red-800">
+            {deleteToken}
+          </p>
+          {error && deletePromptOpen ? (
+            <p
+              className="mt-3 rounded-lg border border-red-300 bg-red-100 px-3 py-2 text-sm text-red-900"
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : null}
+          <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-red-900">
+            Type the code
+            <input
+              type="text"
+              value={deleteInput}
+              onChange={(e) =>
+                setDeleteInput(e.target.value.toUpperCase())
+              }
+              autoComplete="off"
+              spellCheck={false}
+              inputMode="text"
+              maxLength={DELETE_TOKEN_LENGTH}
+              className="mt-1.5 w-full rounded-xl border border-red-300 bg-white px-3 py-2.5 font-mono text-base tracking-[0.4em] text-red-900 outline-none ring-red-300/40 focus:ring-2"
+            />
+          </label>
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-red-100 pt-4">
+            <button
+              type="button"
+              onClick={() => void handleConfirmDelete()}
+              disabled={
+                deleting ||
+                deleteInput.trim() !== deleteToken ||
+                !editingDealId
+              }
+              className={cn(
+                "rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50",
+              )}
+            >
+              {deleting ? "Deleting…" : "Yes, delete this deal"}
+            </button>
+            <button
+              type="button"
+              onClick={() => deleteDialogRef.current?.close()}
+              disabled={deleting}
+              className="rounded-full border border-red-300 bg-white px-6 py-2.5 text-sm font-semibold text-red-800 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : null}
+    </dialog>
+
     <FlashDealCampaignBookings campaignId={editingDealId} />
     </>
   );

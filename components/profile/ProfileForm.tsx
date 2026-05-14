@@ -86,7 +86,7 @@ export function ProfileForm() {
         };
       }
     } catch {
-      /* Firestore may be unavailable until rules/index are set */
+      /* Data source may be unavailable until rules/index are set */
     }
     setFirstName(next.firstName);
     setLastName(next.lastName);
@@ -334,7 +334,7 @@ export function ProfileForm() {
       try {
         await deleteUserProfileDoc(u.uid);
       } catch {
-        /* Firestore doc missing or rules — continue */
+        /* Profile doc missing or rules — continue */
       }
       try {
         await deleteObject(

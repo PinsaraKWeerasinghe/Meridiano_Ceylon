@@ -41,7 +41,7 @@ export function normalizeUserRole(value: unknown): UserRole {
 /** Lead traveller gender — used for package / flash-deal bookings. */
 export type TravellerGender = "male" | "female";
 
-/** Saved from the profile form — `role` is changed by admins (Users page) or Firestore console. */
+/** Saved from the profile form — `role` is changed by admins (Users page) or the data-source console. */
 export type UserProfileFields = {
   firstName: string;
   lastName: string;
@@ -108,7 +108,7 @@ export async function fetchUserProfile(
 export async function saveUserProfile(
   uid: string,
   profile: UserProfileFields,
-  /** Keeps Firestore `email` in sync with Auth for admin listings */
+  /** Keeps data-source `email` in sync with Auth for admin listings */
   authEmail?: string | null,
 ): Promise<void> {
   const ref = doc(getFirestoreDb(), USERS, uid);
@@ -158,7 +158,7 @@ export async function seedNewRegisteredUser(
 
 /**
  * After Google (or any) sign-in: create user doc or backfill missing `role` / `email`.
- * Promoting users to admin/driver should be done in Firestore (Authentication tab does not edit this field).
+ * Promoting users to admin/driver should be done in the data source (Authentication tab does not edit this field).
  */
 export async function ensureUserTravelerDefaults(
   uid: string,
@@ -213,7 +213,7 @@ export async function listAllUserProfilesForAdmin(): Promise<AdminUserRow[]> {
   });
 }
 
-/** Admin-only (enforced by Firestore rules): set a user's `role`. */
+/** Admin-only (enforced by security rules on the data source): set a user's `role`. */
 export async function updateUserRoleAsAdmin(
   targetUid: string,
   role: UserRole,
