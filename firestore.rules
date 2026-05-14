@@ -150,7 +150,9 @@ service cloud.firestore {
 
       allow update: if isAdmin() || flashDealSlotsTakenIncrement();
 
-      allow delete: if false;
+      // Admin-only delete. The Travellers subcollection is preserved as an
+      // audit trail (its own rule still blocks client deletes).
+      allow delete: if isAdmin();
     }
     
     match /flashDeals/{dealId}/Travellers/{travellerUid} {

@@ -9,10 +9,12 @@ import { cn } from "@/lib/utils";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import {
   createEmptyFlashDealDraft,
+  deleteFlashDealForAdmin,
   EMPTY_ITINERARY_SNAP,
   FLASH_DEALS_COLLECTION,
   listFlashDealsForAdmin,
   loadFlashDealForAdminPage,
+  normalizeMinSlotsProceedForSave,
   saveFlashDealSettings,
   type FlashDealAdminMeta,
   type FlashDealItinerarySnap,
@@ -27,6 +29,30 @@ function formatDateTime(value: Date): string {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+/** Skip I, L, O to keep the type-to-confirm string easy to read. */
+const DELETE_TOKEN_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ";
+const DELETE_TOKEN_LENGTH = 6;
+
+function generateDeleteToken(): string {
+  let out = "";
+  for (let i = 0; i < DELETE_TOKEN_LENGTH; i++) {
+    out += DELETE_TOKEN_ALPHABET.charAt(
+      Math.floor(Math.random() * DELETE_TOKEN_ALPHABET.length),
+    );
+  }
+  return out;
+}
+
+/**Digits and optional cents only; `$`/`commas stripped while typing. */
+function filterUsdAmountInput(raw: string): string {
+  let v = raw.replace(/,/g, "").replace(/\$/g, "").replace(/[^\d.]/g, "");
+  const i = v.indexOf(".");
+  if (i === -1) return v;
+  const whole = v.slice(0, i).replace(/\./g, "");
+  const rest = v.slice(i + 1).replace(/\./g, "").slice(0, 2);
+  return rest.length > 0 ? `${whole}.${rest}` : `${whole}.`;
 }
 
 export function AdminFlashDealPageClient() {
@@ -62,6 +88,11 @@ export function AdminFlashDealPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [savedOk, setSavedOk] = useState(false);
 
+  const [deletePromptOpen, setDeletePromptOpen] = useState(false);
+  const [deleteToken, setDeleteToken] = useState("");
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   const applyValuesToForm = useCallback((values: FlashDealSettingsInput) => {
     setTitle(values.title);
     setDealDate(values.dealDate);
@@ -82,12 +113,19 @@ export function AdminFlashDealPageClient() {
     );
   }, []);
 
+  const closeDeletePrompt = useCallback(() => {
+    setDeletePromptOpen(false);
+    setDeleteInput("");
+    setDeleteToken("");
+  }, []);
+
   const reloadDealFromFirestore = useCallback(async (dealId: string | null) => {
     reloadTicketRef.current += 1;
     const ticket = reloadTicketRef.current;
     setError(null);
     setSavedOk(false);
     setLoading(true);
+    closeDeletePrompt();
     try {
       const result = await loadFlashDealForAdminPage(dealId);
       if (ticket !== reloadTicketRef.current) return;
@@ -104,7 +142,7 @@ export function AdminFlashDealPageClient() {
         setLoading(false);
       }
     }
-  }, [applyValuesToForm]);
+  }, [applyValuesToForm, closeDeletePrompt]);
 
   const startNewDraft = useCallback(() => {
     reloadTicketRef.current += 1;
@@ -114,7 +152,39 @@ export function AdminFlashDealPageClient() {
     applyValuesToForm(createEmptyFlashDealDraft());
     setEditingDealId(null);
     setMeta(null);
-  }, [applyValuesToForm]);
+    closeDeletePrompt();
+  }, [applyValuesToForm, closeDeletePrompt]);
+
+  function openDeletePrompt() {
+    setDeleteToken(generateDeleteToken());
+    setDeleteInput("");
+    setDeletePromptOpen(true);
+    setError(null);
+    setSavedOk(false);
+  }
+
+  async function handleConfirmDelete() {
+    if (!editingDealId) return;
+    if (deleteInput.trim() !== deleteToken) return;
+    setDeleting(true);
+    setError(null);
+    setSavedOk(false);
+    try {
+      await deleteFlashDealForAdmin(editingDealId);
+      try {
+        setDealList(await listFlashDealsForAdmin());
+      } catch {
+        setDealList((prev) => prev.filter((row) => row.id !== editingDealId));
+      }
+      startNewDraft();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not delete the flash deal.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -174,6 +244,20 @@ export function AdminFlashDealPageClient() {
     if (!user?.uid) return;
     setError(null);
     setSavedOk(false);
+
+    const minParsed = normalizeMinSlotsProceedForSave(groupSize);
+    if (
+      minParsed != null &&
+      Number.isInteger(maxSlots) &&
+      maxSlots >= 1 &&
+      Number.parseInt(minParsed, 10) > maxSlots
+    ) {
+      setError(
+        "Maximum bookings (sold-out cap) must be greater than or equal to minimum slots to proceed.",
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       const payload: FlashDealSettingsInput = {
@@ -275,16 +359,7 @@ export function AdminFlashDealPageClient() {
         <code className="rounded bg-stone-100 px-1 text-xs">
           {FLASH_DEALS_COLLECTION}
         </code>
-        . Mark one deal as{" "}
-        <strong className="text-forest">featured</strong> to drive the homepage
-        banner and{" "}
-        <Link
-          href="/flash-deal"
-          className="font-semibold text-lagoon underline-offset-2 hover:underline"
-        >
-          /flash-deal
-        </Link>
-        .
+        . Fill the form and save.
       </p>
 
       {loading ? (
@@ -331,7 +406,7 @@ export function AdminFlashDealPageClient() {
           </label>
 
           <label className="block text-sm text-stone-600">
-            Deal date <span className="text-red-600">*</span>
+            Deal Closing date <span className="text-red-600">*</span>
             <input
               type="date"
               value={dealDate}
@@ -343,7 +418,8 @@ export function AdminFlashDealPageClient() {
           </label>
 
           <label className="block text-sm text-stone-600">
-            Maximum bookings (slots) <span className="text-red-600">*</span>
+            Maximum bookings (sold-out cap){" "}
+            <span className="text-red-600">*</span>
             <input
               type="number"
               min={1}
@@ -359,8 +435,34 @@ export function AdminFlashDealPageClient() {
               className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
             />
             <span className="mt-1 block text-xs text-stone-500">
-              Homepage availability and sold-out state use this cap versus bookings
-              in Firestore.
+              When this many bookings are taken, the deal shows as sold out.
+              Must be greater than or equal to minimum slots to proceed.
+            </span>
+          </label>
+
+          <label className="block text-sm text-stone-600">
+            Minimum slots to proceed <span className="text-red-600">*</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              required
+              aria-required="true"
+              value={groupSize === "" ? "" : groupSize}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setGroupSize(
+                  raw === ""
+                    ? ""
+                    : String(Math.max(1, Math.floor(Number(raw)))),
+                );
+              }}
+              placeholder="e.g. 6"
+              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2 tabular-nums"
+            />
+            <span className="mt-1 block text-xs text-stone-500">
+              Number of bookings needed before this flash deal can go ahead. Must
+              not exceed maximum bookings (sold-out cap).
             </span>
           </label>
 
@@ -401,29 +503,55 @@ export function AdminFlashDealPageClient() {
             </label>
           </div>
 
-          <label className="block text-sm text-stone-600">
-            Per person charge <span className="text-red-600">*</span>
-            <textarea
-              value={perPersonCharge}
-              onChange={(e) => setPerPersonCharge(e.target.value)}
-              rows={2}
-              required
-              aria-required="true"
-              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
-            />
-          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm text-stone-600">
+              Per person charge <span className="text-red-600">*</span>
+              <div className="mt-1 flex items-stretch overflow-hidden rounded-xl border border-stone-200 bg-white outline-none ring-lagoon/25 focus-within:ring-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  aria-required="true"
+                  placeholder="674"
+                  value={perPersonCharge}
+                  onChange={(e) =>
+                    setPerPersonCharge(filterUsdAmountInput(e.target.value))
+                  }
+                  className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-stone-900 outline-none tabular-nums placeholder:text-stone-400"
+                />
+                <span
+                  className="flex shrink-0 items-center border-l border-stone-200 bg-stone-50 px-3 text-sm font-semibold tabular-nums text-stone-700"
+                  aria-hidden
+                >
+                  $
+                </span>
+              </div>
+            </label>
 
-          <label className="block text-sm text-stone-600">
-            Group size <span className="text-red-600">*</span>
-            <textarea
-              value={groupSize}
-              onChange={(e) => setGroupSize(e.target.value)}
-              rows={2}
-              required
-              aria-required="true"
-              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
-            />
-          </label>
+            <label className="block text-sm text-stone-600">
+              Registration price <span className="text-red-600">*</span>
+              <div className="mt-1 flex items-stretch overflow-hidden rounded-xl border border-stone-200 bg-white outline-none ring-lagoon/25 focus-within:ring-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  aria-required="true"
+                  placeholder="150"
+                  value={registrationPrice}
+                  onChange={(e) =>
+                    setRegistrationPrice(filterUsdAmountInput(e.target.value))
+                  }
+                  className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-stone-900 outline-none tabular-nums placeholder:text-stone-400"
+                />
+                <span
+                  className="flex shrink-0 items-center border-l border-stone-200 bg-stone-50 px-3 text-sm font-semibold tabular-nums text-stone-700"
+                  aria-hidden
+                >
+                  $
+                </span>
+              </div>
+            </label>
+          </div>
 
           <label className="block text-sm text-stone-600">
             Hotel level <span className="text-red-600">*</span>
@@ -515,18 +643,6 @@ export function AdminFlashDealPageClient() {
             </button>
           </fieldset>
 
-          <label className="block text-sm text-stone-600">
-            Registration price <span className="text-red-600">*</span>
-            <textarea
-              value={registrationPrice}
-              onChange={(e) => setRegistrationPrice(e.target.value)}
-              rows={2}
-              required
-              aria-required="true"
-              className="mt-1 w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
-            />
-          </label>
-
           <div className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-forest">
@@ -611,15 +727,92 @@ export function AdminFlashDealPageClient() {
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className={cn(
-              "rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349] disabled:opacity-50",
-            )}
-          >
-            {saving ? "Saving…" : "Save flash deal"}
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="submit"
+              disabled={saving || deleting}
+              className={cn(
+                "rounded-full bg-gold px-8 py-3 text-sm font-semibold text-cream transition hover:bg-[#1d5349] disabled:opacity-50",
+              )}
+            >
+              {saving ? "Saving…" : "Save flash deal"}
+            </button>
+
+            {editingDealId ? (
+              <button
+                type="button"
+                onClick={openDeletePrompt}
+                disabled={saving || deleting || deletePromptOpen}
+                className={cn(
+                  "rounded-full bg-red-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50",
+                )}
+              >
+                Delete flash deal
+              </button>
+            ) : null}
+          </div>
+
+          {deletePromptOpen && editingDealId ? (
+            <div className="rounded-xl border border-red-300 bg-red-50/70 px-4 py-4 text-sm text-red-900">
+              <p className="font-semibold text-red-800">
+                Confirm permanent deletion
+              </p>
+              <p className="mt-1 text-red-900/90">
+                This removes{" "}
+                <code className="rounded bg-white/80 px-1 text-xs text-red-900">
+                  {FLASH_DEALS_COLLECTION}/{editingDealId}
+                </code>{" "}
+                from Firestore. The Travellers history under it is kept as an
+                audit trail and cannot be reached from the picker any more.
+              </p>
+              <p className="mt-3 text-red-900/90">
+                Type the code below to confirm — the form will reset to a new
+                draft.
+              </p>
+              <p className="mt-2 select-all rounded-lg border border-red-300 bg-white px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-red-800">
+                {deleteToken}
+              </p>
+              <label className="mt-3 block text-xs font-medium text-red-900">
+                Type the code
+                <input
+                  type="text"
+                  value={deleteInput}
+                  onChange={(e) =>
+                    setDeleteInput(e.target.value.toUpperCase())
+                  }
+                  autoComplete="off"
+                  spellCheck={false}
+                  inputMode="text"
+                  maxLength={DELETE_TOKEN_LENGTH}
+                  className="mt-1 w-full rounded-lg border border-red-300 bg-white px-3 py-2 font-mono tracking-[0.4em] text-red-900 outline-none ring-red-300/40 focus:ring-2"
+                />
+              </label>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => void handleConfirmDelete()}
+                  disabled={
+                    deleting ||
+                    deleteInput.trim() !== deleteToken ||
+                    !editingDealId
+                  }
+                  className={cn(
+                    "rounded-full bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50",
+                  )}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete this deal"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeDeletePrompt}
+                  disabled={deleting}
+                  className="rounded-full border border-red-300 bg-white px-6 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
         </form>
       )}
     </Card>

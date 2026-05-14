@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -53,13 +54,19 @@ export type FlashDealSettingsInput = {
   fixedTourStartDate: string;
   /** ISO `YYYY-MM-DD` — fixed departure window end */
   fixedTourEndDate: string;
+  /** Positive USD amount as digits only (optional cents), e.g. "674" or "674.50" — no `$`. */
   perPersonCharge: string;
+  /**
+   * Minimum number of traveller bookings (slots) required before the flash deal
+   * may proceed. Stored as digits only in Firestore under the field name `groupSize`.
+   */
   groupSize: string;
   hotelLevel: string;
   transport: string;
   itinerarySnaps: FlashDealItinerarySnap[];
+  /** Positive USD amount as digits only (optional cents) — no `$`. */
   registrationPrice: string;
-  /** Maximum traveller bookings (homepage availability + sold-out). */
+  /** Maximum bookings for this campaign; when reached, the deal is sold out. */
   maxSlots: number;
 };
 
@@ -69,7 +76,7 @@ export type FlashDealBarConfig = {
   dealDate: string;
   dealWindowStartMs: number;
   dealEndMs: number;
-  /** When ≥ 1, availability UI uses slots left; when 0 (legacy), uses deal-window time. */
+  /** Upper limit on traveller bookings; homepage and detail page show sold out at this cap. */
   maxSlots: number;
   slotsTaken: number;
 };
@@ -296,12 +303,12 @@ const DEFAULT_FLASH_DEAL_FORM: FlashDealSettingsInput = {
     "Limited slots on curated fixed-date departures. Transport, boutique stays, and breakfast included unless noted.",
   fixedTourStartDate: "2026-06-01",
   fixedTourEndDate: "2026-06-14",
-  perPersonCharge: "From USD — see registration summary",
-  groupSize: "Small groups; exact size confirmed at booking",
+  perPersonCharge: "674",
+  groupSize: "6",
   hotelLevel: "3–4 star boutique stays",
   transport: "Standard AC vehicle with private driver",
   itinerarySnaps: [{ ...DEFAULT_ITINERARY_SNAP }],
-  registrationPrice: "Registration fee confirmed on enquiry",
+  registrationPrice: "150",
   maxSlots: 20,
 };
 
@@ -329,6 +336,33 @@ function docSortMs(data: Record<string, unknown>): number {
   const u = timestampMs(data.updatedAt);
   if (u) return u;
   return timestampMs(data.createdAt);
+}
+
+/**
+ * Normalizes admin / legacy USD amounts: strips `$` and commas, validates a
+ * positive amount, returns a canonical digit string for Firestore (no `$`).
+ * Used for per-person charge and registration price.
+ */
+export function normalizeUsdAmountDigitsForSave(raw: string): string | null {
+  const t = raw.trim().replace(/^\$/, "").replace(/,/g, "").trim();
+  if (!t) return null;
+  if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
+  const n = Number.parseFloat(t);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Number.isInteger(n) ? String(Math.trunc(n)) : String(n);
+}
+
+/**
+ * Minimum slots (bookings) before the deal may proceed. Stored in `groupSize`
+ * in Firestore (digit string only).
+ */
+export function normalizeMinSlotsProceedForSave(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (!/^[1-9]\d*$/.test(t)) return null;
+  const n = Number.parseInt(t, 10);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return String(n);
 }
 
 export function createEmptyFlashDealDraft(): FlashDealSettingsInput {
@@ -460,19 +494,32 @@ export async function loadFlashDealForAdminPage(
     fixedTourEndDate:
       isoDateOrEmpty(d, "fixedTourEndDate") ||
       DEFAULT_FLASH_DEAL_FORM.fixedTourEndDate,
-    perPersonCharge:
-      strField(d, "perPersonCharge") ||
-      DEFAULT_FLASH_DEAL_FORM.perPersonCharge,
-    groupSize:
-      strField(d, "groupSize") || DEFAULT_FLASH_DEAL_FORM.groupSize,
+    perPersonCharge: (() => {
+      const ppcRaw = strField(d, "perPersonCharge");
+      const parsed = normalizeUsdAmountDigitsForSave(ppcRaw);
+      if (parsed) return parsed;
+      if (!ppcRaw) return DEFAULT_FLASH_DEAL_FORM.perPersonCharge;
+      return "";
+    })(),
+    groupSize: (() => {
+      const raw = strField(d, "groupSize");
+      const parsed = normalizeMinSlotsProceedForSave(raw);
+      if (parsed) return parsed;
+      if (!raw) return DEFAULT_FLASH_DEAL_FORM.groupSize;
+      return "";
+    })(),
     hotelLevel:
       strField(d, "hotelLevel") || DEFAULT_FLASH_DEAL_FORM.hotelLevel,
     transport:
       strField(d, "transport") || DEFAULT_FLASH_DEAL_FORM.transport,
     itinerarySnaps: normalizeItinerarySnaps(d.itinerarySnaps),
-    registrationPrice:
-      strField(d, "registrationPrice") ||
-      DEFAULT_FLASH_DEAL_FORM.registrationPrice,
+    registrationPrice: (() => {
+      const regRaw = strField(d, "registrationPrice");
+      const parsed = normalizeUsdAmountDigitsForSave(regRaw);
+      if (parsed) return parsed;
+      if (!regRaw) return DEFAULT_FLASH_DEAL_FORM.registrationPrice;
+      return "";
+    })(),
     maxSlots:
       loadedMaxSlots > 0 ? loadedMaxSlots : DEFAULT_FLASH_DEAL_FORM.maxSlots,
   };
@@ -490,7 +537,7 @@ export async function saveFlashDealSettings(
   const dealDate = input.dealDate.trim();
   if (!title) throw new Error("Title is required.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dealDate)) {
-    throw new Error("Deal date must be YYYY-MM-DD.");
+    throw new Error("Deal Closing date must be YYYY-MM-DD.");
   }
 
   const tourStart = input.fixedTourStartDate.trim();
@@ -508,11 +555,21 @@ export async function saveFlashDealSettings(
   if (!input.description.trim()) {
     throw new Error("Description is required.");
   }
-  if (!input.perPersonCharge.trim()) {
-    throw new Error("Per person charge is required.");
+  const perPersonChargeNorm = normalizeUsdAmountDigitsForSave(
+    input.perPersonCharge,
+  );
+  if (perPersonChargeNorm == null) {
+    throw new Error(
+      "Per person charge must be a positive number (e.g. 674 or 674.50), without $.",
+    );
   }
-  if (!input.groupSize.trim()) {
-    throw new Error("Group size is required.");
+  const minSlotsProceedNorm = normalizeMinSlotsProceedForSave(
+    input.groupSize,
+  );
+  if (minSlotsProceedNorm == null) {
+    throw new Error(
+      "Minimum slots to proceed must be a whole number of at least 1.",
+    );
   }
   if (!input.hotelLevel.trim()) {
     throw new Error("Hotel level is required.");
@@ -520,8 +577,14 @@ export async function saveFlashDealSettings(
   if (!input.transport.trim()) {
     throw new Error("Transport is required.");
   }
-  if (!input.registrationPrice.trim()) {
-    throw new Error("Registration price is required.");
+
+  const registrationPriceNorm = normalizeUsdAmountDigitsForSave(
+    input.registrationPrice,
+  );
+  if (registrationPriceNorm == null) {
+    throw new Error(
+      "Registration price must be a positive number (e.g. 150 or 150.50), without $.",
+    );
   }
 
   if (
@@ -529,7 +592,15 @@ export async function saveFlashDealSettings(
     !Number.isInteger(input.maxSlots) ||
     input.maxSlots < 1
   ) {
-    throw new Error("Maximum slots must be a whole number of at least 1.");
+    throw new Error(
+      "Maximum bookings (sold-out cap) must be a whole number of at least 1.",
+    );
+  }
+
+  if (Number.parseInt(minSlotsProceedNorm, 10) > input.maxSlots) {
+    throw new Error(
+      "Maximum bookings (sold-out cap) must be greater than or equal to minimum slots to proceed.",
+    );
   }
 
   const snapsRaw = sanitizeItinerarySnapsForSave(input.itinerarySnaps);
@@ -557,12 +628,12 @@ export async function saveFlashDealSettings(
     description: input.description.trim(),
     fixedTourStartDate: tourStart,
     fixedTourEndDate: tourEnd,
-    perPersonCharge: input.perPersonCharge.trim(),
-    groupSize: input.groupSize.trim(),
+    perPersonCharge: perPersonChargeNorm,
+    groupSize: minSlotsProceedNorm,
     hotelLevel: input.hotelLevel.trim(),
     transport: input.transport.trim(),
     itinerarySnaps: snaps,
-    registrationPrice: input.registrationPrice.trim(),
+    registrationPrice: registrationPriceNorm,
     maxSlots: input.maxSlots,
   };
 
@@ -626,6 +697,20 @@ export async function saveFlashDealSettings(
 
   await batch.commit();
   return { dealId };
+}
+
+/**
+ * Hard-delete a campaign document. The `Travellers` subcollection is intentionally
+ * left in place — Firestore client SDK does not cascade, and rules block clients
+ * from deleting historic booking records.
+ */
+export async function deleteFlashDealForAdmin(dealId: string): Promise<void> {
+  const trimmed = dealId.trim();
+  if (!trimmed) {
+    throw new Error("Deal id is required to delete a flash deal.");
+  }
+  const ref = doc(getFirestoreDb(), FLASH_DEALS_COLLECTION, trimmed);
+  await deleteDoc(ref);
 }
 
 function pickBestFeaturedDealDetail(

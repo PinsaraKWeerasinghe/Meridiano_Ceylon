@@ -37,6 +37,21 @@ function formatPricePpDisplay(raw: string): string {
   return s;
 }
 
+/** Plain USD (no `pp` suffix) — e.g. registration fee. */
+function formatUsdAmountDisplay(raw: string): string {
+  const s = raw.trim();
+  if (!s) return "—";
+  const core = s
+    .replace(/^\$/, "")
+    .trim()
+    .replace(/\bpp\b\s*$/i, "")
+    .trim();
+  if (!core) return "—";
+  const simplePrice = /^[\d,]+(?:\.\d{1,2})?$/.test(core);
+  if (simplePrice) return `$${core}`;
+  return s;
+}
+
 /** Empty CMS value on the public page */
 function emptyCell(): string {
   return "—";
@@ -45,6 +60,14 @@ function emptyCell(): string {
 function displayDetailText(raw: string): string {
   const s = raw.trim();
   return s.length > 0 ? s : emptyCell();
+}
+
+/** `groupSize` in Firestore: digit string = minimum bookings to proceed; else legacy copy. */
+function displayMinSlotsToProceed(raw: string): string {
+  const t = raw.trim();
+  if (!t) return emptyCell();
+  if (/^\d+$/.test(t)) return t;
+  return displayDetailText(raw);
 }
 
 function DetailSection({
@@ -262,10 +285,10 @@ export function FlashDealDetailPageClient() {
           </div>
           <div>
             <dt className="font-serif text-base font-semibold text-forest">
-              Group size
+              Minimum slots to proceed
             </dt>
-            <dd className={cn("mt-2", detailValueClass)}>
-              {displayDetailText(detail.groupSize)}
+            <dd className={cn("mt-2 tabular-nums", detailValueClass)}>
+              {displayMinSlotsToProceed(detail.groupSize)}
             </dd>
           </div>
           <div>
@@ -413,7 +436,7 @@ export function FlashDealDetailPageClient() {
                     <div className="flex justify-between gap-4">
                       <span className="text-stone-700">Registration price</span>
                       <span className="shrink-0 text-right font-medium text-forest">
-                        {formatPricePpDisplay(detail.registrationPrice)}
+                        {formatUsdAmountDisplay(detail.registrationPrice)}
                       </span>
                     </div>
                   </div>
@@ -429,7 +452,7 @@ export function FlashDealDetailPageClient() {
             {bookingReady && !slotsLimited ? (
               <p className="text-xs text-amber-800">
                 Booking isn&apos;t open yet — an administrator still needs to set
-                maximum bookings (slots) for this campaign.
+                maximum bookings (sold-out cap) for this campaign.
               </p>
             ) : null}
             {soldOut ? (
