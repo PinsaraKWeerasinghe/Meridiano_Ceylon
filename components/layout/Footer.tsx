@@ -36,7 +36,31 @@ export function Footer() {
                   href="/terms"
                   className="text-goldMint underline-offset-4 transition hover:text-cream hover:underline"
                 >
+                  Booking &amp; care (summary)
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/terms"
+                  className="text-goldMint underline-offset-4 transition hover:text-cream hover:underline"
+                >
                   Terms &amp; Conditions
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/privacy"
+                  className="text-goldMint underline-offset-4 transition hover:text-cream hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/refund"
+                  className="text-goldMint underline-offset-4 transition hover:text-cream hover:underline"
+                >
+                  Refund Policy
                 </Link>
               </li>
               <li>

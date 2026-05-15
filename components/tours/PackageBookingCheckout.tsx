@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
@@ -12,10 +11,35 @@ import {
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import { cn } from "@/lib/utils";
 
-const PRIVACY_PDF_HREF = "/Documents/Privacy_Policy.pdf";
-const REFUND_PDF_HREF = `/Documents/${encodeURIComponent("Refund_policy .pdf")}`;
+import { PolicyMarkdown } from "@/components/legal/PolicyMarkdown";
+import {
+  legalPolicyHref,
+  type LegalPolicySlug,
+} from "@/lib/legal-documents";
 
-const POLICY_DOC_LINK_CLASS =
+const POLICY_DOCS: ReadonlyArray<{
+  id: LegalPolicySlug;
+  label: string;
+  href: string;
+}> = [
+  {
+    id: "terms",
+    label: "Terms and Conditions",
+    href: legalPolicyHref("terms"),
+  },
+  {
+    id: "privacy",
+    label: "Privacy Policy",
+    href: legalPolicyHref("privacy"),
+  },
+  {
+    id: "refund",
+    label: "Refund Policy",
+    href: legalPolicyHref("refund"),
+  },
+];
+
+const POLICY_DOC_BUTTON_CLASS =
   "font-semibold text-lagoon underline-offset-2 hover:underline";
 
 export function PackageBookingCheckout() {
@@ -33,6 +57,44 @@ export function PackageBookingCheckout() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+
+  const [openDocId, setOpenDocId] = useState<LegalPolicySlug | null>(null);
+  const [docContents, setDocContents] = useState<
+    Partial<Record<LegalPolicySlug, string>>
+  >({});
+  const [docLoadingId, setDocLoadingId] = useState<LegalPolicySlug | null>(
+    null,
+  );
+  const [docError, setDocError] = useState<string | null>(null);
+
+  async function togglePolicyDoc(id: LegalPolicySlug) {
+    if (openDocId === id) {
+      setOpenDocId(null);
+      return;
+    }
+    setDocError(null);
+    setOpenDocId(id);
+    if (docContents[id] != null) return;
+    const doc = POLICY_DOCS.find((d) => d.id === id);
+    if (!doc) return;
+    setDocLoadingId(id);
+    try {
+      const res = await fetch(doc.href, { cache: "force-cache" });
+      if (!res.ok) {
+        throw new Error(`Could not load ${doc.label} (${res.status}).`);
+      }
+      const text = await res.text();
+      setDocContents((prev) => ({ ...prev, [id]: text }));
+    } catch (err) {
+      setDocError(
+        err instanceof Error
+          ? err.message
+          : "Could not load this document. Try again.",
+      );
+    } finally {
+      setDocLoadingId((prev) => (prev === id ? null : prev));
+    }
+  }
 
   useEffect(() => {
     const d = safeReadDraftFromStorage();
@@ -57,7 +119,7 @@ export function PackageBookingCheckout() {
     if (!draft) return;
     if (!termsAccepted) {
       setPayError(
-        "Please confirm you agree to the Privacy Policy and Refund Policy.",
+        "Please confirm you agree to the Terms and Conditions, Privacy Policy, and Refund Policy.",
       );
       return;
     }
@@ -306,29 +368,60 @@ export function PackageBookingCheckout() {
         <fieldset>
           <legend className="text-sm font-semibold text-forest">Policies</legend>
           <p className="mt-1 text-xs text-stone-600">
-            Please review before you pay:
+            Please review before you pay. Click a document to read it inline.
           </p>
           <ul className="mt-2 list-inside list-disc space-y-1.5 text-xs text-stone-600">
-            <li>
-              <Link
-                href={PRIVACY_PDF_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={POLICY_DOC_LINK_CLASS}
-              >
-                Privacy Policy (PDF)
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={REFUND_PDF_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={POLICY_DOC_LINK_CLASS}
-              >
-                Refund policy (PDF)
-              </Link>
-            </li>
+            {POLICY_DOCS.map((doc) => {
+              const isOpen = openDocId === doc.id;
+              const isLoading = docLoadingId === doc.id;
+              const md = docContents[doc.id];
+              return (
+                <li key={doc.id}>
+                  <button
+                    type="button"
+                    onClick={() => void togglePolicyDoc(doc.id)}
+                    aria-expanded={isOpen}
+                    aria-controls={`policy-doc-${doc.id}`}
+                    className={POLICY_DOC_BUTTON_CLASS}
+                  >
+                    {doc.label}
+                  </button>
+                  {isLoading ? (
+                    <span className="ml-2 text-[11px] text-stone-500">
+                      Loading…
+                    </span>
+                  ) : null}
+                  {isOpen ? (
+                    <div
+                      id={`policy-doc-${doc.id}`}
+                      className="mt-2 max-h-[22rem] overflow-y-auto rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 sm:max-h-[28rem]"
+                    >
+                      {docError && md == null ? (
+                        <p className="text-red-700">{docError}</p>
+                      ) : md != null ? (
+                        <div className="space-y-2">
+                          <PolicyMarkdown content={md} variant="inline" />
+                          <p className="border-t border-stone-200 pt-2 text-[11px] text-stone-500">
+                            Prefer a full-page view?{" "}
+                            <a
+                              href={`/legal/${doc.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-lagoon underline-offset-2 hover:underline"
+                            >
+                              Open “{doc.label}” on its own page
+                            </a>
+                            .
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-stone-500">Loading {doc.label}…</p>
+                      )}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-800">
             <input
@@ -338,7 +431,8 @@ export function PackageBookingCheckout() {
               className="mt-1 rounded border-stone-300 text-forest"
             />
             <span>
-              I have read and agree to the Privacy Policy and Refund Policy
+              I have read and agree to the Terms and Conditions, Privacy
+              Policy, and Refund Policy.
             </span>
           </label>
         </fieldset>
