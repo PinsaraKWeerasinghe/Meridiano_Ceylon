@@ -20,7 +20,6 @@ import {
   useNavbarContext,
 } from "flowbite-react";
 import { AuthNav } from "@/components/auth/AuthNav";
-import { useAuthUser } from "@/components/auth/useAuthUser";
 import { PackagesNavDropdown } from "@/components/layout/PackagesNavDropdown";
 import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
 import { cn } from "@/lib/utils";
@@ -98,7 +97,6 @@ function usePrefersReducedMotion() {
 
 export function Navbar({ maintenanceActive = false }: NavbarProps) {
   const pathname = usePathname();
-  const { user } = useAuthUser();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [scrollHidden, setScrollHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -132,10 +130,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
 
   const hideOnScroll = !prefersReducedMotion && scrollHidden;
 
-  const navAfterPackages: NavItem[] = [
-    ...(user ? [{ href: "/reviews", label: "Reviews" }] : []),
-    ...navLinksAfterPackagesBase,
-  ];
+  const navAfterPackages: NavItem[] = [...navLinksAfterPackagesBase];
 
   return (
     <div

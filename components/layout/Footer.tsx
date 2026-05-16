@@ -91,14 +91,6 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/reviews"
-                  className="text-cream/90 transition hover:text-cream hover:underline"
-                >
-                  Guest reviews
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/digital-buddy"
                   className="text-cream/90 transition hover:text-cream hover:underline"
                 >
