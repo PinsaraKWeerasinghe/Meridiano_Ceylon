@@ -27,3 +27,14 @@ export function sociableKitGoogleReviewsEmbedId(): string | null {
 export function sociableKitGoogleReviewsIframeSrc(embedId: string): string {
   return `https://widgets.sociablekit.com/google-reviews/iframe/${embedId}`;
 }
+
+/** Iframe is fixed-height (cross-origin content cannot auto-shrink). Default trims excess blank space below short widgets; raise via env if content is clipped. */
+const DEFAULT_SOCIABLEKIT_IFRAME_HEIGHT_PX = 720;
+
+export function sociableKitGoogleReviewsIframeHeightPx(): number {
+  const raw =
+    process.env.NEXT_PUBLIC_SOCIABLEKIT_GOOGLE_REVIEWS_IFRAME_HEIGHT_PX?.trim();
+  const n = raw ? Number.parseInt(raw, 10) : NaN;
+  if (Number.isFinite(n) && n >= 280 && n <= 2400) return n;
+  return DEFAULT_SOCIABLEKIT_IFRAME_HEIGHT_PX;
+}
