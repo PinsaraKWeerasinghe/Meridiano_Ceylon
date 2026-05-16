@@ -31,7 +31,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: "Meridiano Ceylon | Luxury Sri Lanka Tours",
+    default: "Meridiano Ceylon | Sri Lanka Tourism services",
     template: "%s | Meridiano Ceylon",
   },
   description:
