@@ -1,6 +1,4 @@
 import { SiteReviewsPanel } from "@/components/home/SiteReviewsPanel";
-import { TrustPilotTrustBox } from "@/components/home/TrustPilotTrustBox";
-import { TripAdvisorReviewsPanel } from "@/components/home/TripAdvisorReviewsPanel";
 
 export function TrustPilotReviewsSection() {
   return (
@@ -11,8 +9,9 @@ export function TrustPilotReviewsSection() {
             Reviews &amp; ratings
           </h2>
           <p className="mt-2 text-sm text-stone-700">
-            Trusted by travellers worldwide — on Trustpilot and TripAdvisor — and
-            from guests who travelled with Meridiano Ceylon.
+            Words from guests who travelled with Meridiano Ceylon. Links to our
+            Trustpilot and TripAdvisor listings are alongside social profiles
+            further down the page.
           </p>
         </div>
         <div className="mt-10">
@@ -26,10 +25,6 @@ export function TrustPilotReviewsSection() {
           <div className="mt-4">
             <SiteReviewsPanel />
           </div>
-        </div>
-        <div className="mt-12 grid gap-8 lg:grid-cols-2 lg:items-stretch lg:gap-10 [&>*]:min-w-0">
-          <TrustPilotTrustBox />
-          <TripAdvisorReviewsPanel />
         </div>
       </div>
     </section>

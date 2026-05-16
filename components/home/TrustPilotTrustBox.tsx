@@ -19,7 +19,7 @@ const BOOTSTRAP =
 /** Default: TrustBox Carousel — override with `NEXT_PUBLIC_TRUSTPILOT_TEMPLATE_ID` if your embed uses another template. */
 const DEFAULT_TEMPLATE_ID = "54ad501d-baf0-4835-afd4-067b32f7f831";
 
-const TRUSTPILOT_LOGO_SRC = "/SiteInfo/Trustpilot_Logo.svg.png";
+const TRUSTPILOT_LOGO_SRC = "/SocialMediaLogs/Trustpilot_Logo.svg.png";
 
 function TrustpilotLogoTop({ className }: { className?: string }) {
   return (
