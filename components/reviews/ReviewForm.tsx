@@ -1,62 +1,201 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useAuthUser } from "@/components/auth/useAuthUser";
 import { Card } from "@/components/ui/Card";
 import { StarRatingInput } from "@/components/ui/StarRatingInput";
-import { packagesGreenCard } from "@/lib/packages-section-theme";
-import { cn } from "@/lib/utils";
 import { reviewTourOptions } from "@/data/tours";
+import { packagesGreenCard } from "@/lib/packages-section-theme";
+import { fetchUserProfile } from "@/lib/user-profile";
+import { SITE_REVIEW_STORY_MAX, submitSiteReview } from "@/lib/site-reviews";
+import { cn } from "@/lib/utils";
+
+function buildFullName(
+  profile: { firstName: string; lastName: string } | null,
+  displayName: string | null | undefined,
+): string {
+  if (profile) {
+    const fromProfile = [profile.firstName, profile.lastName]
+      .filter((s) => s.trim())
+      .join(" ")
+      .trim();
+    if (fromProfile) return fromProfile;
+  }
+  return displayName?.trim() ?? "";
+}
 
 export function ReviewForm() {
-  const [name, setName] = useState("");
+  const { user, ready: authReady } = useAuthUser();
+  const [fullName, setFullName] = useState("");
+  const [profileLoading, setProfileLoading] = useState(true);
   const [tourType, setTourType] = useState(reviewTourOptions[0] ?? "");
   const [story, setStory] = useState("");
-  const [files, setFiles] = useState<FileList | null>(null);
-  const [overall, setOverall] = useState(0);
   const [driver, setDriver] = useState(0);
   const [vehicle, setVehicle] = useState(0);
   const [safety, setSafety] = useState(0);
+  const [overall, setOverall] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (!authReady || !user?.uid) {
+      setProfileLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const doc = await fetchUserProfile(user.uid);
+        if (cancelled) return;
+        const name = buildFullName(doc, user.displayName);
+        setFullName((prev) => (prev.trim() === "" ? name : prev));
+      } catch {
+        if (!cancelled) setFullName((prev) => (prev.trim() === "" ? (user.displayName ?? "") : prev));
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, user?.uid, user?.displayName]);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
-    if (!name.trim()) return;
+    if (!user?.uid) return;
+    const name = fullName.trim();
+    if (!name) {
+      setFormError("We need your name from your profile. Update your profile and try again.");
+      return;
+    }
     if (!overall || !driver || !vehicle || !safety) {
       setFormError("Please tap a star rating in each category.");
       return;
     }
-    setSubmitted(true);
+    const body = story.trim();
+    if (body.length > SITE_REVIEW_STORY_MAX) {
+      setFormError(`Your review must be ${SITE_REVIEW_STORY_MAX} characters or less.`);
+      return;
+    }
+    if (body.length === 0) {
+      setFormError("Please write a few words for your review.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await submitSiteReview({
+        authorUid: user.uid,
+        authorName: name,
+        authorPhotoUrl: user.photoURL?.trim() ?? null,
+        tourType,
+        story: body,
+        ratingOverall: overall,
+        ratingDriver: driver,
+        ratingVehicle: vehicle,
+        ratingSafety: safety,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setFormError(
+        err instanceof Error ? err.message : "Could not submit your review. Try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!authReady) {
+    return (
+      <Card className={cn("text-center text-sm text-stone-600", packagesGreenCard)}>
+        Loading…
+      </Card>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Card className={cn("text-center", packagesGreenCard)}>
+        <p className="font-serif text-lg font-semibold text-forest">
+          Sign in to leave a review
+        </p>
+        <p className="mt-2 text-sm text-stone-700">
+          Reviews are tied to your account so we can show your name fairly on the site.
+        </p>
+        <Link
+          href="/login?next=/reviews"
+          className="mt-6 inline-flex rounded-full bg-forest px-6 py-3 text-sm font-semibold text-cream transition hover:bg-forest-hover"
+        >
+          Sign in
+        </Link>
+      </Card>
+    );
   }
 
   if (submitted) {
     return (
       <Card className={cn("text-center", packagesGreenCard)}>
         <p className="font-serif text-xl font-semibold text-forest">
-          Thank you, {name.trim()}!
+          Thank you, {fullName.trim()}!
         </p>
         <p className="mt-2 text-sm text-stone-700">
-          Your feedback means the world to us. This demo does not store reviews
-          yet — our team will enable submissions soon.
+          Your review has been saved and will appear in our guest reviews on the home page.
         </p>
+        <Link
+          href="/"
+          className="mt-6 inline-block text-sm font-semibold text-lagoon underline-offset-2 hover:underline"
+        >
+          Back to home
+        </Link>
+      </Card>
+    );
+  }
+
+  if (user && profileLoading) {
+    return (
+      <Card className={cn("text-center text-sm text-stone-600", packagesGreenCard)}>
+        Loading your profile…
+      </Card>
+    );
+  }
+
+  if (!profileLoading && !fullName.trim()) {
+    return (
+      <Card className={cn("text-center", packagesGreenCard)}>
+        <p className="font-serif text-lg font-semibold text-forest">
+          Add your name in Profile first
+        </p>
+        <p className="mt-2 text-sm text-stone-700">
+          We use your first and last name from your account for this review.
+        </p>
+        <Link
+          href="/profile"
+          className="mt-6 inline-flex rounded-full bg-forest px-6 py-3 text-sm font-semibold text-cream transition hover:bg-forest-hover"
+        >
+          Open profile
+        </Link>
       </Card>
     );
   }
 
   return (
     <Card className={packagesGreenCard}>
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-8">
         <div>
           <label htmlFor="review-name" className="text-sm font-medium text-forest">
             Your name
           </label>
+          <p className="mt-1 text-xs text-stone-500">
+            From your account profile ({profileLoading ? "loading…" : "update in Profile if needed"}).
+          </p>
           <input
             id="review-name"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
+            readOnly
+            value={fullName}
+            className="mt-1 w-full cursor-not-allowed rounded-xl border border-stone-200 bg-stone-100 px-3 py-2.5 text-stone-900 outline-none"
           />
         </div>
 
@@ -80,7 +219,7 @@ export function ReviewForm() {
 
         <div>
           <label htmlFor="review-story" className="text-sm font-medium text-forest">
-            Your story
+            Write your review
           </label>
           <textarea
             id="review-story"
@@ -88,41 +227,16 @@ export function ReviewForm() {
             value={story}
             onChange={(e) => setStory(e.target.value)}
             placeholder="What was the highlight of your journey?"
+            maxLength={SITE_REVIEW_STORY_MAX}
             className="mt-1 w-full resize-y rounded-xl border border-stone-200 bg-stone-50/50 px-3 py-2.5 text-stone-900 outline-none ring-lagoon/25 focus:ring-2"
           />
-        </div>
-
-        <div>
-          <span className="text-sm font-medium text-forest">Photos</span>
-          <p className="text-xs text-stone-500">
-            Upload is UI-only for now — files stay on your device.
+          <p className="mt-1 text-xs text-stone-500">
+            {story.length}/{SITE_REVIEW_STORY_MAX} characters
           </p>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => setFiles(e.target.files)}
-            className="mt-2 block w-full text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-lagoon file:px-4 file:py-2 file:text-sm file:font-semibold file:text-cream hover:file:bg-lagoon/90"
-          />
-          {files && files.length > 0 ? (
-            <ul className="mt-2 text-xs text-stone-500">
-              {Array.from(files).map((f) => (
-                <li key={f.name}>{f.name}</li>
-              ))}
-            </ul>
-          ) : null}
         </div>
 
         <fieldset className="space-y-6 border-0 p-0">
-          <legend className="text-sm font-semibold text-forest">
-            Ratings
-          </legend>
-          <StarRatingInput
-            id="overall"
-            label="Overall experience"
-            value={overall}
-            onChange={setOverall}
-          />
+          <legend className="text-sm font-semibold text-forest">Ratings</legend>
           <StarRatingInput
             id="driver"
             label="Driver & guide"
@@ -141,6 +255,12 @@ export function ReviewForm() {
             value={safety}
             onChange={setSafety}
           />
+          <StarRatingInput
+            id="overall"
+            label="Overall experience"
+            value={overall}
+            onChange={setOverall}
+          />
         </fieldset>
 
         {formError ? (
@@ -151,9 +271,13 @@ export function ReviewForm() {
 
         <button
           type="submit"
-          className="w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-cream transition hover:bg-forest-hover"
+          disabled={submitting}
+          className={cn(
+            "w-full rounded-full bg-forest py-3.5 text-sm font-semibold text-cream transition hover:bg-forest-hover",
+            submitting && "opacity-60",
+          )}
         >
-          Submit review
+          {submitting ? "Submitting…" : "Submit review"}
         </button>
       </form>
     </Card>

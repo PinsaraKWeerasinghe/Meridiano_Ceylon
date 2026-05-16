@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
+import { DEVELOPER_SITE_HREF, SITE_VERSION_LABEL } from "@/lib/site-meta";
 
 export function Footer() {
   return (
@@ -27,10 +28,12 @@ export function Footer() {
               Trust
             </p>
             <ul className="mt-3 space-y-2 text-sm text-cream/90">
+              {/* SLTDA license — add real number later
               <li>
                 SLTDA license:{" "}
                 <span className="text-cream/50">[Your license number]</span>
               </li>
+              */}
               <li>
                 <Link
                   href="/terms"
@@ -105,9 +108,28 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <p className="mt-10 text-center text-xs text-cream/60">
-          © {new Date().getFullYear()} Meridiano Ceylon. All rights reserved.
-        </p>
+        <div className="mt-10 flex flex-col items-center gap-2 border-t border-cream/15 pt-5 text-center">
+          <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 whitespace-nowrap text-[11px] tracking-wide text-cream/65 sm:text-xs">
+            <span>
+              © {new Date().getFullYear()} Meridiano Ceylon. All rights reserved.
+            </span>
+            <span aria-hidden className="text-cream/40">·</span>
+            <span>
+              Crafted by{" "}
+              <a
+                href={DEVELOPER_SITE_HREF}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-goldMint underline-offset-2 transition hover:text-cream hover:underline"
+              >
+                pinsara.com
+              </a>
+            </span>
+          </p>
+          <span className="rounded-full border border-cream/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-cream/70">
+            {SITE_VERSION_LABEL}
+          </span>
+        </div>
       </div>
     </footer>
   );

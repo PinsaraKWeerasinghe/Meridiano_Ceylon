@@ -20,17 +20,20 @@ import {
   useNavbarContext,
 } from "flowbite-react";
 import { AuthNav } from "@/components/auth/AuthNav";
+import { useAuthUser } from "@/components/auth/useAuthUser";
 import { PackagesNavDropdown } from "@/components/layout/PackagesNavDropdown";
 import { LOGO_ALT, LOGO_SRC } from "@/lib/branding";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/reviews", label: "Reviews" },
+const homeLink = { href: "/", label: "Home" } as const;
+
+const navLinksAfterPackagesBase = [
   { href: "/about", label: "About" },
   { href: "/care", label: "Care Promise" },
   { href: "/terms", label: "Terms" },
 ] as const;
+
+type NavItem = { href: string; label: string };
 
 function pathActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -95,6 +98,7 @@ function usePrefersReducedMotion() {
 
 export function Navbar({ maintenanceActive = false }: NavbarProps) {
   const pathname = usePathname();
+  const { user } = useAuthUser();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [scrollHidden, setScrollHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -127,6 +131,11 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
   }, [prefersReducedMotion, pathname]);
 
   const hideOnScroll = !prefersReducedMotion && scrollHidden;
+
+  const navAfterPackages: NavItem[] = [
+    ...(user ? [{ href: "/reviews", label: "Reviews" }] : []),
+    ...navLinksAfterPackagesBase,
+  ];
 
   return (
     <div
@@ -196,10 +205,10 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
         <AppNavbarCollapse>
           <NavbarLink
             as={Link}
-            href={navLinks[0].href}
-            active={pathActive(pathname, navLinks[0].href)}
+            href={homeLink.href}
+            active={pathActive(pathname, homeLink.href)}
           >
-            {navLinks[0].label}
+            {homeLink.label}
           </NavbarLink>
           <Suspense
             fallback={
@@ -210,7 +219,7 @@ export function Navbar({ maintenanceActive = false }: NavbarProps) {
           >
             <PackagesNavDropdown pathname={pathname} />
           </Suspense>
-          {navLinks.slice(1).map((l) => (
+          {navAfterPackages.map((l) => (
             <NavbarLink
               key={l.href}
               as={Link}

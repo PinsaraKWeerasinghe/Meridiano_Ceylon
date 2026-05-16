@@ -73,6 +73,17 @@ service cloud.firestore {
         || request.resource.data.submittedAt is timestamp;
     }
 
+    function starRatingField(v) {
+      return (v is int || v is float)
+        && v >= 1
+        && v <= 5;
+    }
+
+    function siteReviewCreatedAtOk() {
+      return request.resource.data.createdAt == request.time
+        || request.resource.data.createdAt is timestamp;
+    }
+
     // Users collection
     match /users/{userId} {
 
@@ -187,6 +198,43 @@ service cloud.firestore {
           || request.resource.data.submitterEmail is string);
 
       allow delete: if false;
+    }
+
+    // Guest site reviews (navbar + home; full names & avatar URLs snapshotted at submit)
+    match /siteReviews/{reviewId} {
+      allow read: if resource.data.status == 'published'
+        || (request.auth != null
+          && request.auth.uid == resource.data.authorUid)
+        || isAdmin();
+
+      allow create: if request.auth != null
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'authorUid', 'authorName', 'authorPhotoUrl', 'tourType', 'story',
+          'ratingOverall', 'ratingDriver', 'ratingVehicle', 'ratingSafety',
+          'status', 'createdAt'
+        ])
+        && request.resource.data.authorUid is string
+        && request.resource.data.authorName is string
+        && request.resource.data.authorName.size() > 0
+        && request.resource.data.authorName.size() <= 200
+        && (!request.resource.data.keys().hasAny(['authorPhotoUrl'])
+          || request.resource.data.authorPhotoUrl == null
+          || (request.resource.data.authorPhotoUrl is string
+            && request.resource.data.authorPhotoUrl.size() <= 2048))
+        && request.resource.data.tourType is string
+        && request.resource.data.tourType.size() <= 200
+        && request.resource.data.story is string
+        && request.resource.data.story.size() > 0
+        && request.resource.data.story.size() <= 4000
+        && starRatingField(request.resource.data.ratingOverall)
+        && starRatingField(request.resource.data.ratingDriver)
+        && starRatingField(request.resource.data.ratingVehicle)
+        && starRatingField(request.resource.data.ratingSafety)
+        && request.resource.data.status == 'published'
+        && siteReviewCreatedAtOk();
+
+      allow update, delete: if isAdmin();
     }
     
   }
