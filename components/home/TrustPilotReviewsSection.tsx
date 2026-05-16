@@ -1,4 +1,4 @@
-import { SiteReviewsPanel } from "@/components/home/SiteReviewsPanel";
+import { GoogleMapsReviewsPromo } from "@/components/home/GoogleMapsReviewsPromo";
 
 export function TrustPilotReviewsSection() {
   return (
@@ -9,23 +9,11 @@ export function TrustPilotReviewsSection() {
             Reviews &amp; ratings
           </h2>
           <p className="mt-2 text-sm text-stone-700">
-            Words from guests who travelled with Meridiano Ceylon. Links to our
-            Trustpilot and TripAdvisor listings are alongside social profiles
-            further down the page.
+            Recent ratings and feedback from travellers who explored Sri Lanka with
+            Meridiano Ceylon.
           </p>
         </div>
-        <div className="mt-10">
-          <h3 className="font-serif text-xl font-semibold text-forest">
-            Guest reviews
-          </h3>
-          <p className="mt-1 text-xs text-stone-600">
-            Names and photos are from traveller accounts when the review was
-            submitted.
-          </p>
-          <div className="mt-4">
-            <SiteReviewsPanel />
-          </div>
-        </div>
+        <GoogleMapsReviewsPromo />
       </div>
     </section>
   );
