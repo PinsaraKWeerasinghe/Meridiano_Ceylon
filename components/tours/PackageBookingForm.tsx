@@ -12,6 +12,7 @@ import {
 } from "@/lib/package-booking-draft";
 import { computeBookingBillBreakdown } from "@/lib/package-booking-bill";
 import { appendUserBooking } from "@/lib/user-bookings";
+import { buildTripSegmentForPackageTour } from "@/lib/trip-ref-format";
 import { fetchUserProfile } from "@/lib/user-profile";
 import { cn } from "@/lib/utils";
 import { type PackageBookingPartner } from "@/utils/whatsapp";
@@ -251,13 +252,14 @@ export function PackageBookingForm() {
     setSubmitting(true);
     try {
       const uid = user?.uid?.trim();
-      if (uid) {
+      if (uid && selectedTour) {
         await appendUserBooking(uid, {
           kind: "package",
           typeLabel: `Package · ${selectedTitle}`,
           bookingDate: "",
           packageSlug,
           flashDealDocId: "",
+          tripSegmentKey: buildTripSegmentForPackageTour(selectedTour),
         });
       }
       sessionStorage.setItem(

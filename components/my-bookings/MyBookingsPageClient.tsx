@@ -7,8 +7,12 @@ import { Card } from "@/components/ui/Card";
 import { formatDealDateLabel } from "@/lib/flash-deal-colombo";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import {
+  bookingPaymentHref,
   subscribeUserBookings,
+  USER_BOOKING_PAYMENT_STATUS_LABEL,
+  USER_BOOKING_TRIP_STATUS_LABEL,
   type UserBookingRow,
+  type UserBookingTripStatus,
 } from "@/lib/user-bookings";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +30,50 @@ function formatCreatedAtCell(d: Date | null): string {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function tripStatusTone(s: UserBookingTripStatus): string {
+  switch (s) {
+    case "pending-payment":
+      return "bg-amber-50 text-amber-950 ring-amber-800/15";
+    case "booking-confirmed":
+      return "bg-sky-50 text-sky-950 ring-sky-800/15";
+    case "trip-started":
+      return "bg-emerald-50 text-emerald-950 ring-emerald-800/15";
+    case "trip-completed":
+      return "bg-stone-100 text-stone-800 ring-stone-400/25";
+    case "canceled":
+      return "bg-red-50 text-red-900 ring-red-800/15";
+  }
+}
+
+function PaymentStatusCell({ row }: { row: UserBookingRow }) {
+  const label = USER_BOOKING_PAYMENT_STATUS_LABEL[row.paymentStatus];
+  const href = bookingPaymentHref(row);
+  if (row.paymentStatus === "pending-payment" && href) {
+    return (
+      <Link
+        href={href}
+        className="font-semibold text-lagoon underline underline-offset-2 hover:text-lagoon/80"
+      >
+        {label}
+      </Link>
+    );
+  }
+  return <span className="text-stone-800">{label}</span>;
+}
+
+function TripStatusCell({ row }: { row: UserBookingRow }) {
+  return (
+    <span
+      className={cn(
+        "inline-block rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+        tripStatusTone(row.tripStatus),
+      )}
+    >
+      {USER_BOOKING_TRIP_STATUS_LABEL[row.tripStatus]}
+    </span>
+  );
 }
 
 export function MyBookingsPageClient() {
@@ -93,11 +141,20 @@ export function MyBookingsPageClient() {
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-stone-200/80">
-          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-stone-200 bg-stone-50/90">
                 <th className="px-4 py-3 font-serif font-semibold text-forest">
                   Type
+                </th>
+                <th className="px-4 py-3 font-serif font-semibold text-forest">
+                  Trip ID
+                </th>
+                <th className="px-4 py-3 font-serif font-semibold text-forest">
+                  Payment status
+                </th>
+                <th className="px-4 py-3 font-serif font-semibold text-forest">
+                  Trip status
                 </th>
                 <th className="px-4 py-3 font-serif font-semibold text-forest">
                   Deal / travel date
@@ -127,6 +184,15 @@ export function MyBookingsPageClient() {
                     <p className="mt-2 whitespace-normal leading-snug">
                       {row.typeLabel}
                     </p>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top font-mono text-xs tracking-wide text-stone-900">
+                    {row.tripRef ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 align-top text-stone-800">
+                    <PaymentStatusCell row={row} />
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3 align-top text-stone-800">
+                    <TripStatusCell row={row} />
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 align-top tabular-nums text-stone-800">
                     {formatBookingDateCell(row.bookingDate)}

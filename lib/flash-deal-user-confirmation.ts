@@ -2,6 +2,7 @@ import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { getFirestoreDb } from "@/lib/firebase/db";
 import { FLASH_DEALS_COLLECTION } from "@/lib/flash-deal-settings";
 import { appendUserBooking } from "@/lib/user-bookings";
+import { buildFlashTripSegment } from "@/lib/trip-ref-format";
 import type { PackageBookingPartner } from "@/utils/whatsapp";
 
 /** Traveller confirmations: `flashDeals/{campaignId}/Travellers/{uid}` */
@@ -138,6 +139,7 @@ export async function saveUserFlashDealConfirmation(
         bookingDate: dealDateIso,
         packageSlug: payload.packageSlug.trim(),
         flashDealDocId: campaignId,
+        tripSegmentKey: buildFlashTripSegment(payload.packageTitle.trim()),
       });
     } catch {
       // Booking already persisted under campaign; ledger is best-effort.

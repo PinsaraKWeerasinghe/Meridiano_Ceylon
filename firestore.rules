@@ -2,6 +2,58 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Trip ledger refs: package P05B00001, specialty S00A00001, flash FSUM00001.
+    function bookingTripRefIsValid() {
+      return request.resource.data.tripRef is string
+        && (request.resource.data.tripRef.matches('^P[0-9]{2}[A-Z][0-9]{5}$')
+          || request.resource.data.tripRef.matches('^S[0-9]{2}[A-Z][0-9]{5}$')
+          || request.resource.data.tripRef.matches('^F[A-Z]{3}[0-9]{5}$'));
+    }
+
+    function tripCounterKeyIsValid(key) {
+      return key.matches('^P[0-9]{2}[A-Z]$')
+        || key.matches('^S[0-9]{2}[A-Z]$')
+        || key.matches('^F[A-Z]{3}$');
+    }
+
+    function bookingPaymentStatusAllowed(v) {
+      return v is string && (
+        v == 'pending-payment'
+        || v == 'advance-paid'
+        || v == 'payment-completed'
+        || v == 'pending-refund'
+        || v == 'refunded'
+      );
+    }
+
+    function bookingTripStatusAllowed(v) {
+      return v is string && (
+        v == 'pending-payment'
+        || v == 'booking-confirmed'
+        || v == 'trip-started'
+        || v == 'trip-completed'
+        || v == 'canceled'
+      );
+    }
+
+    function bookingLedgerTripRefsUnchanged() {
+      return (!resource.data.keys().hasAny(['tripRef']))
+        ? (!request.resource.data.keys().hasAny(['tripRef']))
+        : (request.resource.data.keys().hasAny(['tripRef'])
+            && request.resource.data.tripRef == resource.data.tripRef);
+    }
+
+    /** Admin edits payment/trip lifecycle only — core traveller row stays fixed. */
+    function bookingLedgerCoreImmutableForAdminPatch() {
+      return request.resource.data.kind == resource.data.kind
+        && request.resource.data.typeLabel == resource.data.typeLabel
+        && request.resource.data.bookingDate == resource.data.bookingDate
+        && request.resource.data.packageSlug == resource.data.packageSlug
+        && request.resource.data.flashDealDocId == resource.data.flashDealDocId
+        && bookingLedgerTripRefsUnchanged()
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
     // Helper function
     function isAdmin() {
       return request.auth != null &&
@@ -126,7 +178,8 @@ service cloud.firestore {
         && request.auth.uid == userId
         && request.resource.data.keys().hasOnly([
           'kind', 'typeLabel', 'bookingDate', 'packageSlug',
-          'flashDealDocId', 'createdAt'
+          'flashDealDocId', 'tripRef', 'createdAt',
+          'paymentStatus', 'tripStatus'
         ])
         && request.resource.data.kind is string
         && (request.resource.data.kind == 'flash-deal'
@@ -135,9 +188,39 @@ service cloud.firestore {
         && request.resource.data.bookingDate is string
         && request.resource.data.packageSlug is string
         && request.resource.data.flashDealDocId is string
+        && bookingTripRefIsValid()
+        && request.resource.data.paymentStatus == 'pending-payment'
+        && request.resource.data.tripStatus == 'pending-payment'
         && request.resource.data.createdAt == request.time;
 
-      allow update, delete: if false;
+      allow update: if isAdmin()
+        && bookingLedgerCoreImmutableForAdminPatch()
+        && bookingPaymentStatusAllowed(request.resource.data.paymentStatus)
+        && bookingTripStatusAllowed(request.resource.data.tripStatus);
+
+      allow delete: if false;
+    }
+
+    // Monotonic next counters for Trip IDs (same transactions as Bookings writes).
+    // next holds the latest allocated sequence (1..n) for segmentKey + 5-digit suffix.
+    match /tripRefCounters/{segmentKey} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && tripCounterKeyIsValid(segmentKey)
+        && request.resource.data.keys().hasOnly(['next'])
+        && request.resource.data.next is int
+        && request.resource.data.next == 1;
+
+      allow update: if request.auth != null
+        && tripCounterKeyIsValid(segmentKey)
+        && resource.data.keys().hasOnly(['next'])
+        && request.resource.data.keys().hasOnly(['next'])
+        && request.resource.data.next is int
+        && resource.data.next is int
+        && request.resource.data.next == resource.data.next + 1;
+
+      allow delete: if false;
     }
 
     // Flash Deal Settings collection

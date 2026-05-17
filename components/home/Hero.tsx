@@ -16,7 +16,10 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative flex min-h-[calc(100svh-var(--maintenance-strip-h,0px)-var(--navbar-h))] min-h-[calc(100dvh-var(--maintenance-strip-h,0px)-var(--navbar-h))] w-full flex-col overflow-hidden bg-forest text-cream">
+    <section
+      id="home-hero"
+      className="relative flex min-h-[calc(100svh-var(--maintenance-strip-h,0px)-var(--navbar-h))] min-h-[calc(100dvh-var(--maintenance-strip-h,0px)-var(--navbar-h))] w-full flex-col overflow-hidden bg-forest text-cream"
+    >
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <div className="absolute inset-0">
           <HeroSlideshow

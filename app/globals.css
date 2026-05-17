@@ -58,4 +58,31 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /** Meridiano home — backpacker float enters from off-screen left, no vertical drop. */
+  .animate-backpacker-enter-left {
+    animation: backpacker-slide-enter-left 0.72s cubic-bezier(0.25, 0.46, 0.45, 1) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-backpacker-enter-left {
+      animation: none;
+      transform: translate3d(0, 0, 0);
+      opacity: 1;
+    }
+  }
+}
+
+@keyframes backpacker-slide-enter-left {
+  0% {
+    transform: translate3d(calc(-1 * (100vw + 3rem)), 0, 0);
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
 }

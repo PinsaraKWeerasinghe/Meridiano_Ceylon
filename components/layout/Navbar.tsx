@@ -27,9 +27,9 @@ import { cn } from "@/lib/utils";
 const homeLink = { href: "/", label: "Home" } as const;
 
 const navLinksAfterPackagesBase = [
-  { href: "/about", label: "About" },
   { href: "/care", label: "Care Promise" },
-  { href: "/terms", label: "Terms" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 type NavItem = { href: string; label: string };

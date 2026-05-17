@@ -36,14 +36,6 @@ export function Footer() {
               */}
               <li>
                 <Link
-                  href="/terms"
-                  className="text-goldMint underline-offset-4 transition hover:text-cream hover:underline"
-                >
-                  Booking &amp; care (summary)
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/legal/terms"
                   className="text-goldMint underline-offset-4 transition hover:text-cream hover:underline"
                 >
@@ -97,6 +89,14 @@ export function Footer() {
                   Digital Buddy (backpackers)
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="text-cream/90 transition hover:text-cream hover:underline"
+                >
+                  Contact us
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function Footer() {
             </span>
             <span aria-hidden className="text-cream/40">·</span>
             <span>
-              Crafted by{" "}
+              Powered by{" "}
               <a
                 href={DEVELOPER_SITE_HREF}
                 target="_blank"
