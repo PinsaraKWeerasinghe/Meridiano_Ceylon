@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
 import { Card } from "@/components/ui/Card";
-import { formatDealDateLabel } from "@/lib/flash-deal-colombo";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import {
   bookingPaymentHref,
+  cancelUserBooking,
   subscribeUserBookings,
   USER_BOOKING_PAYMENT_STATUS_LABEL,
   USER_BOOKING_TRIP_STATUS_LABEL,
@@ -17,20 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 
 const LOGIN_NEXT = "/login?next=/my-bookings";
-
-function formatBookingDateCell(iso: string): string {
-  const s = iso.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "—";
-  return formatDealDateLabel(s);
-}
-
-function formatCreatedAtCell(d: Date | null): string {
-  if (!d) return "—";
-  return d.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
 
 function tripStatusTone(s: UserBookingTripStatus): string {
   switch (s) {
@@ -80,6 +66,8 @@ export function MyBookingsPageClient() {
   const { user, ready } = useAuthUser();
   const [rows, setRows] = useState<UserBookingRow[]>([]);
   const [subError, setSubError] = useState<string | null>(null);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured() || !ready || !user?.uid) return;
@@ -134,6 +122,12 @@ export function MyBookingsPageClient() {
         </p>
       ) : null}
 
+      {cancelError ? (
+        <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-950">
+          {cancelError}
+        </p>
+      ) : null}
+
       {rows.length === 0 ? (
         <p className="text-sm text-stone-600">
           No saved bookings yet. Book a featured flash deal while signed in, or
@@ -141,7 +135,7 @@ export function MyBookingsPageClient() {
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-stone-200/80">
-          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-stone-200 bg-stone-50/90">
                 <th className="px-4 py-3 font-serif font-semibold text-forest">
@@ -156,11 +150,8 @@ export function MyBookingsPageClient() {
                 <th className="px-4 py-3 font-serif font-semibold text-forest">
                   Trip status
                 </th>
-                <th className="px-4 py-3 font-serif font-semibold text-forest">
-                  Deal / travel date
-                </th>
-                <th className="px-4 py-3 font-serif font-semibold text-forest">
-                  Created
+                <th className="px-4 py-3 text-right font-serif font-semibold text-forest">
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -194,11 +185,42 @@ export function MyBookingsPageClient() {
                   <td className="whitespace-nowrap px-4 py-3 align-top text-stone-800">
                     <TripStatusCell row={row} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 align-top tabular-nums text-stone-800">
-                    {formatBookingDateCell(row.bookingDate)}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 align-top tabular-nums text-stone-700">
-                    {formatCreatedAtCell(row.createdAt)}
+                  <td className="whitespace-nowrap px-4 py-3 align-top text-right">
+                    <button
+                      type="button"
+                      className={cn(
+                        "inline bg-transparent p-0 text-sm font-semibold text-red-600 underline underline-offset-2",
+                        "hover:text-red-800 disabled:pointer-events-none disabled:no-underline disabled:opacity-40",
+                      )}
+                      disabled={
+                        row.tripStatus === "canceled" ||
+                        cancelingId === row.id ||
+                        !user?.uid
+                      }
+                      onClick={async () => {
+                        const ok =
+                          typeof window !== "undefined" &&
+                          window.confirm(
+                            "Cancel this booking? Your record stays on file; unpaid bookings show payment as N/A. If you’ve already paid, we’ll mark refund follow-up.",
+                          );
+                        if (!ok || !user?.uid) return;
+                        setCancelError(null);
+                        setCancelingId(row.id);
+                        try {
+                          await cancelUserBooking(user.uid, row.id);
+                        } catch (e) {
+                          const msg =
+                            e instanceof Error
+                              ? e.message
+                              : "Could not cancel this booking.";
+                          setCancelError(msg);
+                        } finally {
+                          setCancelingId(null);
+                        }
+                      }}
+                    >
+                      {cancelingId === row.id ? "Canceling…" : "Cancel"}
+                    </button>
                   </td>
                 </tr>
               ))}

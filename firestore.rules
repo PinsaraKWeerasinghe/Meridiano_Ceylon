@@ -23,7 +23,34 @@ service cloud.firestore {
         || v == 'payment-completed'
         || v == 'pending-refund'
         || v == 'refunded'
+        || v == 'not-applicable'
+        || v == 'refund-request-initiated'
       );
+    }
+
+    /** Owner cancel from My Bookings: trip canceled; payment transitions per unpaid vs paid ledger. */
+    function bookingLedgerSelfCancelPaymentTransition() {
+      return (resource.data.paymentStatus == 'pending-payment'
+          && request.resource.data.paymentStatus == 'not-applicable')
+        || ((resource.data.paymentStatus == 'advance-paid'
+             || resource.data.paymentStatus == 'payment-completed')
+            && request.resource.data.paymentStatus == 'refund-request-initiated')
+        || (!(resource.data.paymentStatus == 'pending-payment'
+              || resource.data.paymentStatus == 'advance-paid'
+              || resource.data.paymentStatus == 'payment-completed')
+            && request.resource.data.paymentStatus == resource.data.paymentStatus);
+    }
+
+    function bookingLedgerSelfCancelAllowed(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && bookingLedgerCoreImmutableForAdminPatch()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['paymentStatus', 'tripStatus'])
+        && bookingPaymentStatusAllowed(request.resource.data.paymentStatus)
+        && bookingTripStatusAllowed(request.resource.data.tripStatus)
+        && resource.data.tripStatus != 'canceled'
+        && request.resource.data.tripStatus == 'canceled'
+        && bookingLedgerSelfCancelPaymentTransition();
     }
 
     function bookingTripStatusAllowed(v) {
@@ -193,10 +220,11 @@ service cloud.firestore {
         && request.resource.data.tripStatus == 'pending-payment'
         && request.resource.data.createdAt == request.time;
 
-      allow update: if isAdmin()
+      allow update: if (isAdmin()
         && bookingLedgerCoreImmutableForAdminPatch()
         && bookingPaymentStatusAllowed(request.resource.data.paymentStatus)
-        && bookingTripStatusAllowed(request.resource.data.tripStatus);
+        && bookingTripStatusAllowed(request.resource.data.tripStatus))
+        || bookingLedgerSelfCancelAllowed(userId);
 
       allow delete: if false;
     }

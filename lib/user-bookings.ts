@@ -27,6 +27,10 @@ export const USER_BOOKING_PAYMENT_STATUSES = [
   "payment-completed",
   "pending-refund",
   "refunded",
+  /** User-initiated cancel while still unpaid — no settlement */
+  "not-applicable",
+  /** Paid row; user canceled; staff follow-up for refunds */
+  "refund-request-initiated",
 ] as const;
 
 export type UserBookingPaymentStatus =
@@ -98,6 +102,8 @@ export const USER_BOOKING_PAYMENT_STATUS_LABEL: Record<
   "payment-completed": "Payment completed",
   "pending-refund": "Pending refund",
   refunded: "Refunded",
+  "not-applicable": "N/A",
+  "refund-request-initiated": "Refund request initiated",
 };
 
 export const USER_BOOKING_TRIP_STATUS_LABEL: Record<
@@ -146,6 +152,40 @@ function parseBookingDoc(id: string, data: Record<string, unknown>): UserBooking
     tripStatus: parseTripStatus(data.tripStatus),
     createdAt,
   };
+}
+
+/** Next payment status when the owner cancels via My Bookings (see Firestore self-cancel rule). */
+export function paymentStatusAfterSelfCancel(
+  current: UserBookingPaymentStatus,
+): UserBookingPaymentStatus {
+  if (current === "pending-payment") return "not-applicable";
+  if (current === "advance-paid" || current === "payment-completed") {
+    return "refund-request-initiated";
+  }
+  return current;
+}
+
+export async function cancelUserBooking(uid: string, bookingId: string): Promise<void> {
+  const db = getFirestoreDb();
+  const trimmedUid = uid.trim();
+  const id = bookingId.trim();
+  if (!trimmedUid || !id) throw new Error("User id and booking id are required.");
+  const ref = doc(db, "users", trimmedUid, USER_BOOKINGS_SUBCOLLECTION, id);
+
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Booking not found.");
+    const raw = snap.data() as Record<string, unknown>;
+    const row = parseBookingDoc(id, raw);
+    if (!row) throw new Error("Invalid booking.");
+    if (row.tripStatus === "canceled") return;
+
+    const nextPayment = paymentStatusAfterSelfCancel(row.paymentStatus);
+    tx.update(ref, {
+      tripStatus: "canceled",
+      paymentStatus: nextPayment,
+    });
+  });
 }
 
 /**
