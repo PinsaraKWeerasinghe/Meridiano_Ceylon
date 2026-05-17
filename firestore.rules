@@ -70,9 +70,9 @@ service cloud.firestore {
             && request.resource.data.tripRef == resource.data.tripRef);
     }
 
-    /** Admin edits payment/trip lifecycle only — core traveller row stays fixed. */
-    function bookingLedgerCoreImmutableForAdminPatch() {
+    function bookingLedgerPackageCoreImmutable() {
       return request.resource.data.kind == resource.data.kind
+        && request.resource.data.kind == 'package'
         && request.resource.data.typeLabel == resource.data.typeLabel
         && request.resource.data.bookingDate == resource.data.bookingDate
         && request.resource.data.packageSlug == resource.data.packageSlug
@@ -81,10 +81,58 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt;
     }
 
-    // Helper function
+    /** Slim flash omits duplicated display fields; legacy rows keep them immutable; no new unsolicited keys. */
+    function bookingLedgerFlashLegacyDisplayFieldsStable() {
+      return (resource.data.keys().hasAny(['typeLabel'])
+          ? request.resource.data.typeLabel == resource.data.typeLabel
+          : !request.resource.data.keys().hasAny(['typeLabel']))
+        && (resource.data.keys().hasAny(['bookingDate'])
+          ? request.resource.data.bookingDate == resource.data.bookingDate
+          : !request.resource.data.keys().hasAny(['bookingDate']))
+        && (resource.data.keys().hasAny(['packageSlug'])
+          ? request.resource.data.packageSlug == resource.data.packageSlug
+          : !request.resource.data.keys().hasAny(['packageSlug']));
+    }
+
+    function bookingLedgerFlashCoreImmutable() {
+      return request.resource.data.kind == resource.data.kind
+        && request.resource.data.kind == 'flash-deal'
+        && request.resource.data.flashDealDocId == resource.data.flashDealDocId
+        && bookingLedgerTripRefsUnchanged()
+        && bookingLedgerFlashLegacyDisplayFieldsStable()
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    /** Admin edits payment/trip lifecycle only — core traveller row stays fixed (shape depends on kind). */
+    function bookingLedgerCoreImmutableForAdminPatch() {
+      return (resource.data.kind == 'package'
+          && bookingLedgerPackageCoreImmutable())
+        || (resource.data.kind == 'flash-deal'
+          && bookingLedgerFlashCoreImmutable());
+    }
+
+    function ledgerPackageBookingCreateAllowed() {
+      return request.resource.data.keys().hasOnly([
+        'kind', 'typeLabel', 'bookingDate', 'packageSlug',
+        'flashDealDocId', 'tripRef', 'createdAt',
+        'paymentStatus', 'tripStatus'
+      ])
+        && request.resource.data.kind == 'package'
+        && request.resource.data.typeLabel is string
+        && request.resource.data.bookingDate is string
+        && request.resource.data.packageSlug is string
+        && request.resource.data.flashDealDocId is string
+        && bookingTripRefIsValid()
+        && request.resource.data.paymentStatus == 'pending-payment'
+        && request.resource.data.tripStatus == 'pending-payment'
+        && request.resource.data.createdAt == request.time;
+    }
+
+    /** Role is enforced on Firestore profile docs (`users/{uid}.role`). */
     function isAdmin() {
-      return request.auth != null &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
     function flashDealSlotsTakenIncrement() {
@@ -152,30 +200,21 @@ service cloud.firestore {
         || request.resource.data.submittedAt is timestamp;
     }
 
-    // Users collection
-    match /users/{userId} {
-
-      // User can access own document
-      // Admin can access all user documents
-      allow read, write: if request.auth != null &&
-                         (request.auth.uid == userId || isAdmin());
-    }
-
-    // Flash-deal booking confirmations (same doc id as flashDeals/{campaignId})
-    match /users/{userId}/flashDeals/{flashDealCampaignId} {
-      allow read: if request.auth != null &&
-                  (request.auth.uid == userId || isAdmin());
-
-      allow create, update: if request.auth != null
-        && request.auth.uid == userId
-        && flashDealCampaignId == request.resource.data.flashDealDocId
-        && exists(/databases/$(database)/documents/flashDeals/$(flashDealCampaignId))
+    /** Ledger + traveller snapshot at `users/{uid}/flashDeals/{campaignId}` — not under Bookings. */
+    function userFlashDealProfileCreateAllowed(cidFromPath) {
+      return request.resource.data.flashDealDocId == cidFromPath
         && request.resource.data.keys().hasOnly([
-          'flashDealDocId', 'packageSlug', 'packageTitle', 'primaryName',
-          'primaryPassport', 'primaryGender', 'partners', 'phone',
-          'addonTitles', 'notes', 'estimatedBillLines', 'submitterEmail',
-          'submittedAt'
+          'addonTitles', 'createdAt', 'estimatedBillLines',
+          'flashDealDocId', 'kind', 'notes', 'packageSlug', 'packageTitle',
+          'partners', 'paymentStatus', 'phone', 'primaryGender',
+          'primaryName', 'primaryPassport', 'submittedAt', 'submitterEmail',
+          'tripRef', 'tripStatus'
         ])
+        && request.resource.data.kind == 'flash-deal'
+        && bookingTripRefIsValid()
+        && request.resource.data.paymentStatus == 'pending-payment'
+        && request.resource.data.tripStatus == 'pending-payment'
+        && request.resource.data.createdAt == request.time
         && request.resource.data.packageSlug is string
         && request.resource.data.packageTitle is string
         && request.resource.data.primaryName is string
@@ -192,33 +231,78 @@ service cloud.firestore {
         && submittedAtAllowed()
         && (request.resource.data.submitterEmail == null
           || request.resource.data.submitterEmail is string);
+    }
+
+    /** Locks traveller snapshot + Trip ID counters for admin ledger patches and owner self-cancel. */
+    function userFlashDealProfileImmutableSnapshotForLedgerPatch() {
+      return request.resource.data.flashDealDocId == resource.data.flashDealDocId
+        && request.resource.data.kind == resource.data.kind
+        && request.resource.data.kind == 'flash-deal'
+        && request.resource.data.tripRef == resource.data.tripRef
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.submittedAt == resource.data.submittedAt
+        && request.resource.data.packageSlug == resource.data.packageSlug
+        && request.resource.data.packageTitle == resource.data.packageTitle
+        && request.resource.data.primaryName == resource.data.primaryName
+        && request.resource.data.primaryPassport == resource.data.primaryPassport
+        && request.resource.data.primaryGender == resource.data.primaryGender
+        && request.resource.data.partners == resource.data.partners
+        && request.resource.data.phone == resource.data.phone
+        && request.resource.data.addonTitles == resource.data.addonTitles
+        && request.resource.data.notes == resource.data.notes
+        && request.resource.data.estimatedBillLines == resource.data.estimatedBillLines
+        && request.resource.data.submitterEmail == resource.data.submitterEmail;
+    }
+
+    function userFlashDealProfileSelfCancelAllowed(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && userFlashDealProfileImmutableSnapshotForLedgerPatch()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['paymentStatus', 'tripStatus'])
+        && bookingPaymentStatusAllowed(request.resource.data.paymentStatus)
+        && bookingTripStatusAllowed(request.resource.data.tripStatus)
+        && resource.data.tripStatus != 'canceled'
+        && request.resource.data.tripStatus == 'canceled'
+        && bookingLedgerSelfCancelPaymentTransition();
+    }
+
+    // Users collection
+    match /users/{userId} {
+
+      // User can access own document
+      // Admin can access all user documents
+      allow read, write: if request.auth != null &&
+                         (request.auth.uid == userId || isAdmin());
+    }
+
+    // Flash-deal traveller + ledger: `users/{uid}/flashDeals/{campaignId}` — same doc id as `flashDeals/{campaignId}`.
+    match /users/{userId}/flashDeals/{flashDealCampaignId} {
+      allow read: if request.auth != null &&
+                  (request.auth.uid == userId || isAdmin());
+
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && exists(/databases/$(database)/documents/flashDeals/$(flashDealCampaignId))
+        && userFlashDealProfileCreateAllowed(flashDealCampaignId);
+
+      allow update: if (isAdmin()
+        && userFlashDealProfileImmutableSnapshotForLedgerPatch()
+        && bookingPaymentStatusAllowed(request.resource.data.paymentStatus)
+        && bookingTripStatusAllowed(request.resource.data.tripStatus))
+        || userFlashDealProfileSelfCancelAllowed(userId);
 
       allow delete: if false;
     }
 
-    // User booking ledger (flash-deal + package enquiries saved from the app)
+    // User booking ledger (package enquiries; legacy flash-deal rows may remain)
     match /users/{userId}/Bookings/{bookingId} {
+      /** Try admin first — collection-group ledger queries rely on stable admin authorization. */
       allow read: if request.auth != null
-        && (request.auth.uid == userId || isAdmin());
+        && (isAdmin() || request.auth.uid == userId);
 
       allow create: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly([
-          'kind', 'typeLabel', 'bookingDate', 'packageSlug',
-          'flashDealDocId', 'tripRef', 'createdAt',
-          'paymentStatus', 'tripStatus'
-        ])
-        && request.resource.data.kind is string
-        && (request.resource.data.kind == 'flash-deal'
-          || request.resource.data.kind == 'package')
-        && request.resource.data.typeLabel is string
-        && request.resource.data.bookingDate is string
-        && request.resource.data.packageSlug is string
-        && request.resource.data.flashDealDocId is string
-        && bookingTripRefIsValid()
-        && request.resource.data.paymentStatus == 'pending-payment'
-        && request.resource.data.tripStatus == 'pending-payment'
-        && request.resource.data.createdAt == request.time;
+        && ledgerPackageBookingCreateAllowed();
 
       allow update: if (isAdmin()
         && bookingLedgerCoreImmutableForAdminPatch()
@@ -229,7 +313,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Monotonic next counters for Trip IDs (same transactions as Bookings writes).
+    // Monotonic next counters for Trip IDs (writes align with Bookings / user flashDeal ledger txs).
     // next holds the latest allocated sequence (1..n) for segmentKey + 5-digit suffix.
     match /tripRefCounters/{segmentKey} {
       allow read: if request.auth != null;
@@ -268,9 +352,10 @@ service cloud.firestore {
     
     match /flashDeals/{dealId}/Travellers/{travellerUid} {
       allow read: if request.auth != null &&
-                  (request.auth.uid == travellerUid || isAdmin());
+                  (isAdmin() || request.auth.uid == travellerUid);
 
-      allow create, update: if request.auth != null
+      /** Traveller confirmations are immutable after first write (audit snapshot). */
+      allow create: if request.auth != null
         && request.auth.uid == travellerUid
         && dealId == request.resource.data.flashDealDocId
         && exists(/databases/$(database)/documents/flashDeals/$(dealId))
@@ -297,7 +382,7 @@ service cloud.firestore {
         && (request.resource.data.submitterEmail == null
           || request.resource.data.submitterEmail is string);
 
-      allow delete: if false;
+      allow update, delete: if false;
     }
     
   }

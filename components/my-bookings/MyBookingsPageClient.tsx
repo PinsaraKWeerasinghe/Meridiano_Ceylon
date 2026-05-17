@@ -8,7 +8,8 @@ import { isFirebaseConfigured } from "@/lib/firebase";
 import {
   bookingPaymentHref,
   cancelUserBooking,
-  subscribeUserBookings,
+  cancelUserFlashDealBooking,
+  subscribeUserBookingsHydrated,
   USER_BOOKING_PAYMENT_STATUS_LABEL,
   USER_BOOKING_TRIP_STATUS_LABEL,
   type UserBookingRow,
@@ -36,7 +37,7 @@ function tripStatusTone(s: UserBookingTripStatus): string {
 function PaymentStatusCell({ row }: { row: UserBookingRow }) {
   const label = USER_BOOKING_PAYMENT_STATUS_LABEL[row.paymentStatus];
   const href = bookingPaymentHref(row);
-  if (row.paymentStatus === "pending-payment" && href) {
+  if (!row.frozenByAdmin && row.paymentStatus === "pending-payment" && href) {
     return (
       <Link
         href={href}
@@ -50,6 +51,16 @@ function PaymentStatusCell({ row }: { row: UserBookingRow }) {
 }
 
 function TripStatusCell({ row }: { row: UserBookingRow }) {
+  if (row.frozenByAdmin) {
+    return (
+      <span
+        className="inline-block rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-900 ring-1 ring-inset ring-slate-400/30"
+        title="The flash deal campaign was removed by an admin; this booking is frozen."
+      >
+        Frozen by Admin
+      </span>
+    );
+  }
   return (
     <span
       className={cn(
@@ -71,7 +82,7 @@ export function MyBookingsPageClient() {
 
   useEffect(() => {
     if (!isFirebaseConfigured() || !ready || !user?.uid) return;
-    const unsub = subscribeUserBookings(user.uid, setRows, setSubError);
+    const unsub = subscribeUserBookingsHydrated(user.uid, setRows, setSubError);
     return unsub;
   }, [ready, user?.uid]);
 
@@ -194,6 +205,7 @@ export function MyBookingsPageClient() {
                       )}
                       disabled={
                         row.tripStatus === "canceled" ||
+                        row.frozenByAdmin === true ||
                         cancelingId === row.id ||
                         !user?.uid
                       }
@@ -201,13 +213,17 @@ export function MyBookingsPageClient() {
                         const ok =
                           typeof window !== "undefined" &&
                           window.confirm(
-                            "Cancel this booking? Your record stays on file; unpaid bookings show payment as N/A. If you’ve already paid, we’ll mark refund follow-up.",
+                            "Are you sure Cancel this booking? Your record stays in My Bookings page. If you’ve already paid, we’ll initiate refund follow-up.",
                           );
                         if (!ok || !user?.uid) return;
                         setCancelError(null);
                         setCancelingId(row.id);
                         try {
-                          await cancelUserBooking(user.uid, row.id);
+                          if (row.kind === "flash-deal") {
+                            await cancelUserFlashDealBooking(user.uid, row.id);
+                          } else {
+                            await cancelUserBooking(user.uid, row.id);
+                          }
                         } catch (e) {
                           const msg =
                             e instanceof Error

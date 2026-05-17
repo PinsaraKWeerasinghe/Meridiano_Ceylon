@@ -22,7 +22,7 @@ import {
   type FlashDealSettingsInput,
 } from "@/lib/flash-deal-settings";
 import { ROLE_LABEL, type UserRole } from "@/lib/user-profile";
-import { FlashDealCampaignBookings } from "@/components/admin/FlashDealCampaignBookings";
+import { FlashDealCampaignTravellers } from "@/components/admin/FlashDealCampaignTravellers";
 
 function formatDateTime(value: Date): string {
   return value.toLocaleString(undefined, {
@@ -859,7 +859,7 @@ export function AdminFlashDealPageClient() {
       ) : null}
     </dialog>
 
-    <FlashDealCampaignBookings campaignId={editingDealId} />
+    <FlashDealCampaignTravellers campaignId={editingDealId} />
     </>
   );
 }

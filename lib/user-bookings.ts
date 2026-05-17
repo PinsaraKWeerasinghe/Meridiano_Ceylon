@@ -1,18 +1,25 @@
 import {
   collection,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
+  where,
+  documentId,
   type Timestamp,
   type Unsubscribe,
 } from "firebase/firestore";
+import { FLASH_DEALS_COLLECTION } from "@/lib/flash-deal-settings";
 import { getFirestoreDb } from "@/lib/firebase/db";
 import { assertValidTripSegmentKey, formatTripRefWithSequence } from "@/lib/trip-ref-format";
 
-/** Ledger under `users/{uid}/Bookings/{autoId}` */
+/** User flash confirmations + Trip ID refs: `users/{uid}/flashDeals/{campaignDocId}` (not Bookings). */
+export const USER_PROFILE_FLASH_DEALS_SUBCOLLECTION = "flashDeals";
+
+/** Ledger under `users/{uid}/Bookings/{autoId}` — package enquiries only for new writes. */
 export const USER_BOOKINGS_SUBCOLLECTION = "Bookings";
 
 /** Atomically allocates sequence numbers per SKU / flash prefix alongside ledger rows */
@@ -46,17 +53,22 @@ export const USER_BOOKING_TRIP_STATUSES = [
 
 export type UserBookingTripStatus = (typeof USER_BOOKING_TRIP_STATUSES)[number];
 
-export type AppendUserBookingInput = {
-  kind: UserBookingKind;
-  /** Row label, e.g. `Flash deal · …` or `Package · …` */
+/** Package-only ledger (`users/{uid}/Bookings`). Flash deals use {@link USER_PROFILE_FLASH_DEALS_SUBCOLLECTION}. */
+export type AppendUserBookingPackageInput = {
+  kind: "package";
+  /** Row label, e.g. `Package · …` */
   typeLabel: string;
   /** ISO `YYYY-MM-DD` deal/travel date; empty when not applicable */
   bookingDate: string;
   packageSlug: string;
+  /** Usually empty string for packages */
   flashDealDocId: string;
-  /** Counter key (without 5-digit suffix), e.g. `P05B`, `S00A`, `FSUM` */
+  /** Counter key (without 5-digit suffix), e.g. `P05B`, `S00A` */
   tripSegmentKey: string;
 };
+
+export type AppendUserBookingInput = AppendUserBookingPackageInput;
+
 
 export type UserBookingRow = {
   id: string;
@@ -70,6 +82,8 @@ export type UserBookingRow = {
   paymentStatus: UserBookingPaymentStatus;
   tripStatus: UserBookingTripStatus;
   createdAt: Date | null;
+  /** True when the parent `flashDeals/{flashDealDocId}` was deleted by an admin (flash rows only). */
+  frozenByAdmin?: boolean;
 };
 
 function parsePaymentStatus(
@@ -117,7 +131,10 @@ export const USER_BOOKING_TRIP_STATUS_LABEL: Record<
   canceled: "Canceled",
 };
 
-function parseBookingDoc(id: string, data: Record<string, unknown>): UserBookingRow | null {
+export function parseUserBookingLedgerDoc(
+  id: string,
+  data: Record<string, unknown>,
+): UserBookingRow | null {
   const kind = data.kind;
   if (kind !== "flash-deal" && kind !== "package") return null;
   const typeLabel = typeof data.typeLabel === "string" ? data.typeLabel.trim() : "";
@@ -140,10 +157,17 @@ function parseBookingDoc(id: string, data: Record<string, unknown>): UserBooking
   ) {
     createdAt = (createdRaw as Timestamp).toDate();
   }
+  /** Slim flash docs omit labels; hydrate from {@link hydrateUserBookingFlashDealFields}. */
+  const displayTypeLabel =
+    typeLabel.trim() !== ""
+      ? typeLabel
+      : kind === "package"
+        ? "Package"
+        : "";
   return {
     id,
     kind,
-    typeLabel: typeLabel || (kind === "flash-deal" ? "Flash deal" : "Package"),
+    typeLabel: displayTypeLabel,
     bookingDate,
     packageSlug,
     flashDealDocId,
@@ -154,7 +178,69 @@ function parseBookingDoc(id: string, data: Record<string, unknown>): UserBooking
   };
 }
 
-/** Next payment status when the owner cancels via My Bookings (see Firestore self-cancel rule). */
+/**
+ * Rows under `users/{uid}/flashDeals/{campaignId}` (`kind`: flash ledger + traveller snapshot).
+ */
+export function parseUserFlashDealDoc(
+  campaignDocId: string,
+  data: Record<string, unknown>,
+): UserBookingRow | null {
+  const flashDealDocId =
+    typeof data.flashDealDocId === "string" ? data.flashDealDocId.trim() : "";
+  if (flashDealDocId === "") return null;
+  if (flashDealDocId !== campaignDocId.trim()) return null;
+
+  const kindRaw = data.kind;
+  if (kindRaw !== undefined && kindRaw !== "" && kindRaw !== "flash-deal") return null;
+
+  const packageTitle =
+    typeof data.packageTitle === "string" ? data.packageTitle.trim() : "";
+  const packageSlug =
+    typeof data.packageSlug === "string" ? data.packageSlug.trim() : "";
+
+  const tripRefRaw = data.tripRef;
+  const tripRef =
+    typeof tripRefRaw === "string" && tripRefRaw.trim() !== ""
+      ? tripRefRaw.trim()
+      : undefined;
+
+  const createdRaw = data.createdAt;
+  const submittedRaw = data.submittedAt;
+  let createdAt: Date | null = null;
+  if (
+    createdRaw &&
+    typeof createdRaw === "object" &&
+    "toDate" in createdRaw &&
+    typeof (createdRaw as Timestamp).toDate === "function"
+  ) {
+    createdAt = (createdRaw as Timestamp).toDate();
+  } else if (
+    submittedRaw &&
+    typeof submittedRaw === "object" &&
+    "toDate" in submittedRaw &&
+    typeof (submittedRaw as Timestamp).toDate === "function"
+  ) {
+    createdAt = (submittedRaw as Timestamp).toDate();
+  }
+
+  /** Title hydrated from campaigns when empty (see hydrateUserBookingFlashDealFields). */
+  const typePrefix = packageTitle ? `Flash deal · ${packageTitle}` : "";
+
+  return {
+    id: campaignDocId.trim(),
+    kind: "flash-deal",
+    typeLabel: typePrefix,
+    bookingDate: "",
+    packageSlug,
+    flashDealDocId,
+    tripRef,
+    paymentStatus: parsePaymentStatus(data.paymentStatus),
+    tripStatus: parseTripStatus(data.tripStatus),
+    createdAt,
+  };
+}
+
+/** Next ledger payment row after owner self-cancel in My Bookings. */
 export function paymentStatusAfterSelfCancel(
   current: UserBookingPaymentStatus,
 ): UserBookingPaymentStatus {
@@ -176,8 +262,39 @@ export async function cancelUserBooking(uid: string, bookingId: string): Promise
     const snap = await tx.get(ref);
     if (!snap.exists()) throw new Error("Booking not found.");
     const raw = snap.data() as Record<string, unknown>;
-    const row = parseBookingDoc(id, raw);
-    if (!row) throw new Error("Invalid booking.");
+    const row = parseUserBookingLedgerDoc(id, raw);
+    if (!row || row.kind !== "package") throw new Error("Booking not found.");
+    if (row.tripStatus === "canceled") return;
+
+    const nextPayment = paymentStatusAfterSelfCancel(row.paymentStatus);
+    tx.update(ref, {
+      tripStatus: "canceled",
+      paymentStatus: nextPayment,
+    });
+  });
+}
+
+export async function cancelUserFlashDealBooking(
+  uid: string,
+  campaignDocId: string,
+): Promise<void> {
+  const db = getFirestoreDb();
+  const trimmedUid = uid.trim();
+  const cid = campaignDocId.trim();
+  if (!trimmedUid || !cid) throw new Error("User id and campaign id are required.");
+  const ref = doc(
+    db,
+    "users",
+    trimmedUid,
+    USER_PROFILE_FLASH_DEALS_SUBCOLLECTION,
+    cid,
+  );
+
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("Flash deal booking not found.");
+    const row = parseUserFlashDealDoc(cid, snap.data() as Record<string, unknown>);
+    if (!row) throw new Error("Invalid flash deal booking.");
     if (row.tripStatus === "canceled") return;
 
     const nextPayment = paymentStatusAfterSelfCancel(row.paymentStatus);
@@ -237,20 +354,124 @@ export async function appendUserBooking(
       { next: newSeq },
       { merge: true },
     );
-    transaction.set(bookingRef, {
-      kind: input.kind,
-      typeLabel: input.typeLabel.trim(),
-      bookingDate: input.bookingDate.trim(),
-      packageSlug: input.packageSlug.trim(),
-      flashDealDocId: input.flashDealDocId.trim(),
+
+    const baseLedger = {
       tripRef,
       paymentStatus: "pending-payment",
       tripStatus: "pending-payment",
       createdAt: serverTimestamp(),
+    } as const;
+
+    transaction.set(bookingRef, {
+      ...baseLedger,
+      kind: "package",
+      typeLabel: input.typeLabel.trim(),
+      bookingDate: input.bookingDate.trim(),
+      packageSlug: input.packageSlug.trim(),
+      flashDealDocId: input.flashDealDocId.trim(),
     });
 
     return { tripRef };
   });
+}
+
+
+async function flashDealCampaignDisplayMetaBatch(
+  campaignIds: string[],
+): Promise<Map<string, { title: string; dealDate: string }>> {
+  const out = new Map<string, { title: string; dealDate: string }>();
+  const unique = Array.from(
+    new Set(campaignIds.map((id) => id.trim()).filter(Boolean)),
+  );
+  if (unique.length === 0) return out;
+
+  const db = getFirestoreDb();
+  const batchSize = 10;
+  for (let i = 0; i < unique.length; i += batchSize) {
+    const batch = unique.slice(i, i + batchSize);
+    const q = query(
+      collection(db, FLASH_DEALS_COLLECTION),
+      where(documentId(), "in", batch),
+    );
+    const snap = await getDocs(q);
+    snap.forEach((d) => {
+      const data = d.data() as Record<string, unknown>;
+      const title = typeof data.title === "string" ? data.title.trim() : "";
+      const rawDate =
+        typeof data.dealDate === "string" ? data.dealDate.trim() : "";
+      const dealDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : "";
+      out.set(d.id, { title, dealDate });
+    });
+  }
+  return out;
+}
+
+/** Fills display fields from `flashDeals/{flashDealDocId}` when ledger rows omit them (slim flash). */
+export async function hydrateUserBookingFlashDealFields(
+  rows: UserBookingRow[],
+): Promise<UserBookingRow[]> {
+  const ids = Array.from(
+    new Set(
+      rows
+        .filter((r) => r.kind === "flash-deal" && r.flashDealDocId.trim() !== "")
+        .map((r) => r.flashDealDocId.trim()),
+    ),
+  );
+  const metaById =
+    ids.length === 0
+      ? new Map<string, { title: string; dealDate: string }>()
+      : await flashDealCampaignDisplayMetaBatch(ids);
+
+  return rows.map((row) => {
+    if (row.kind !== "flash-deal" || row.flashDealDocId.trim() === "") return row;
+    const cid = row.flashDealDocId.trim();
+    const meta = metaById.get(cid);
+    const frozenByAdmin = !meta;
+
+    let typeLabel = row.typeLabel.trim();
+    if (typeLabel === "") {
+      typeLabel = meta?.title ? `Flash deal · ${meta.title}` : `Flash deal (${cid})`;
+    }
+
+    let bookingDate = row.bookingDate;
+    if (bookingDate.trim() === "" && meta?.dealDate) bookingDate = meta.dealDate;
+
+    if (
+      typeLabel === row.typeLabel &&
+      bookingDate === row.bookingDate &&
+      Boolean(row.frozenByAdmin) === frozenByAdmin
+    ) {
+      return row;
+    }
+    return { ...row, typeLabel, bookingDate, frozenByAdmin };
+  });
+}
+
+function mergeMyBookingsLists(
+  bookingLedgerRows: UserBookingRow[],
+  userFlashDealRows: UserBookingRow[],
+): UserBookingRow[] {
+  const profileFlashIds = new Set(
+    userFlashDealRows
+      .filter((r) => r.kind === "flash-deal")
+      .map((r) => r.flashDealDocId.trim())
+      .filter(Boolean),
+  );
+
+  const fromBookingsLedger = bookingLedgerRows.filter((r) => {
+    if (r.kind === "package") return true;
+    if (r.kind !== "flash-deal") return false;
+    const fid = r.flashDealDocId.trim();
+    return fid !== "" && !profileFlashIds.has(fid);
+  });
+
+  const merged = [...userFlashDealRows, ...fromBookingsLedger];
+  merged.sort((a, b) => {
+    const ta = a.createdAt?.getTime() ?? 0;
+    const tb = b.createdAt?.getTime() ?? 0;
+    return tb - ta;
+  });
+  return merged;
 }
 
 export function subscribeUserBookings(
@@ -270,7 +491,10 @@ export function subscribeUserBookings(
     (snap) => {
       const rows: UserBookingRow[] = [];
       snap.forEach((d) => {
-        const row = parseBookingDoc(d.id, d.data() as Record<string, unknown>);
+        const row = parseUserBookingLedgerDoc(
+          d.id,
+          d.data() as Record<string, unknown>,
+        );
         if (row) rows.push(row);
       });
       onError?.(null);
@@ -281,4 +505,91 @@ export function subscribeUserBookings(
       onRows([]);
     },
   );
+}
+
+export function subscribeUserBookingsHydrated(
+  uid: string,
+  onRows: (rows: UserBookingRow[]) => void,
+  onError?: (message: string | null) => void,
+): Unsubscribe {
+  let hydrationGen = 0;
+  let bookingLedgerRows: UserBookingRow[] = [];
+  let userFlashDealRows: UserBookingRow[] = [];
+
+  const db = getFirestoreDb();
+  const trimmed = uid.trim();
+
+  const runHydratedEmit = () => {
+    const merged = mergeMyBookingsLists(bookingLedgerRows, userFlashDealRows);
+    const myGen = ++hydrationGen;
+    void hydrateUserBookingFlashDealFields(merged)
+      .then((hydrated) => {
+        if (myGen !== hydrationGen) return;
+        hydrated.sort((a, b) => {
+          const ta = a.createdAt?.getTime() ?? 0;
+          const tb = b.createdAt?.getTime() ?? 0;
+          return tb - ta;
+        });
+        onError?.(null);
+        onRows(hydrated);
+      })
+      .catch(() => {
+        if (myGen !== hydrationGen) return;
+        onError?.(
+          "Bookings loaded but flash deal titles could not be refreshed. Try reloading.",
+        );
+        onRows(merged);
+      });
+  };
+
+  const bookingsQuery = query(
+    collection(db, "users", trimmed, USER_BOOKINGS_SUBCOLLECTION),
+    orderBy("createdAt", "desc"),
+  );
+
+  const unsubBookings = onSnapshot(
+    bookingsQuery,
+    (snap) => {
+      bookingLedgerRows = [];
+      snap.forEach((d) => {
+        const row = parseUserBookingLedgerDoc(
+          d.id,
+          d.data() as Record<string, unknown>,
+        );
+        if (row) bookingLedgerRows.push(row);
+      });
+      runHydratedEmit();
+    },
+    (err) => {
+      onError?.(err.message);
+      bookingLedgerRows = [];
+      runHydratedEmit();
+    },
+  );
+
+  const unsubFlashProfile = onSnapshot(
+    collection(db, "users", trimmed, USER_PROFILE_FLASH_DEALS_SUBCOLLECTION),
+    (snap) => {
+      userFlashDealRows = [];
+      snap.forEach((d) => {
+        const row = parseUserFlashDealDoc(
+          d.id,
+          d.data() as Record<string, unknown>,
+        );
+        if (row) userFlashDealRows.push(row);
+      });
+      runHydratedEmit();
+    },
+    (err) => {
+      onError?.(err.message);
+      userFlashDealRows = [];
+      runHydratedEmit();
+    },
+  );
+
+  return () => {
+    hydrationGen += 1;
+    unsubBookings();
+    unsubFlashProfile();
+  };
 }

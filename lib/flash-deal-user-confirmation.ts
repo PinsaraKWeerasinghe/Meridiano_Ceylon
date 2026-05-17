@@ -1,8 +1,19 @@
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  runTransaction,
+  serverTimestamp,
+} from "firebase/firestore";
 import { getFirestoreDb } from "@/lib/firebase/db";
 import { FLASH_DEALS_COLLECTION } from "@/lib/flash-deal-settings";
-import { appendUserBooking } from "@/lib/user-bookings";
-import { buildFlashTripSegment } from "@/lib/trip-ref-format";
+import {
+  TRIP_REF_COUNTERS_COLLECTION,
+  USER_PROFILE_FLASH_DEALS_SUBCOLLECTION,
+} from "@/lib/user-bookings";
+import {
+  assertValidTripSegmentKey,
+  buildFlashTripSegment,
+  formatTripRefWithSequence,
+} from "@/lib/trip-ref-format";
 import type { PackageBookingPartner } from "@/utils/whatsapp";
 
 /** Traveller confirmations: `flashDeals/{campaignId}/Travellers/{uid}` */
@@ -22,7 +33,7 @@ export type SaveUserFlashDealConfirmationPayload = {
   notes: string;
   estimatedBillLines: string[];
   submitterEmail: string | null;
-  /** Campaign deal date ISO `YYYY-MM-DD` for My Bookings */
+  /** Campaign deal date (UI); My Bookings uses `dealDate` on `flashDeals/{id}` when ledger is slim. */
   dealDate: string;
 };
 
@@ -55,16 +66,19 @@ function maxSlotsFromDeal(data: Record<string, unknown>): number {
 }
 
 /**
- * Persist flash-deal confirmation under the campaign (`request.auth.uid == uid`).
- * Increments `flashDeals/{campaign}.slotsTaken` once per new traveller doc (same
- * transaction as the traveller write). Public availability reads `slotsTaken` from
- * the campaign document.
+ * First-time bookings: writes `flashDeals/{campaign}/Travellers/{uid}`,
+ * allocates Trip ID (`users/{uid}/flashDeals/{campaign}`), increments `tripRefCounters`, and increments
+ * `slotsTaken` on the campaign — atomically.
+ * Re-submits are ignored — edits use support flow or a future profile path.
  */
 export async function saveUserFlashDealConfirmation(
   uid: string,
   payload: SaveUserFlashDealConfirmationPayload,
 ): Promise<void> {
   const db = getFirestoreDb();
+  const trimmedUid = uid.trim();
+  if (!trimmedUid) throw new Error("User id is required.");
+
   const campaignId = payload.flashDealDocId.trim();
   if (!campaignId) throw new Error("flashDealDocId is required.");
 
@@ -74,7 +88,15 @@ export async function saveUserFlashDealConfirmation(
     FLASH_DEALS_COLLECTION,
     campaignId,
     FLASH_DEAL_TRAVELLERS_SUBCOLLECTION,
-    uid,
+    trimmedUid,
+  );
+
+  const userFlashDocRef = doc(
+    db,
+    "users",
+    trimmedUid,
+    USER_PROFILE_FLASH_DEALS_SUBCOLLECTION,
+    campaignId,
   );
 
   const travellerPayload = {
@@ -97,8 +119,6 @@ export async function saveUserFlashDealConfirmation(
     submittedAt: serverTimestamp(),
   };
 
-  let shouldAppendLedger = false;
-
   await runTransaction(db, async (transaction) => {
     const dealSnap = await transaction.get(dealRef);
     const travellerSnap = await transaction.get(travellerRef);
@@ -106,43 +126,63 @@ export async function saveUserFlashDealConfirmation(
       throw new Error("This flash deal is no longer available.");
     }
 
+    const isRepeat = travellerSnap.exists();
+    if (isRepeat) {
+      return;
+    }
+
+    const userFlashSnap = await transaction.get(userFlashDocRef);
+    if (userFlashSnap.exists()) {
+      throw new Error(
+        "Flash deal enrollment is already recorded for this campaign.",
+      );
+    }
+
     const dealData = dealSnap.data() as Record<string, unknown>;
     const maxSlots = maxSlotsFromDeal(dealData);
     const taken = slotsTakenFromDeal(dealData);
-    const isNewBooking = !travellerSnap.exists();
-    shouldAppendLedger = isNewBooking;
 
-    if (isNewBooking) {
-      if (maxSlots < 1) {
-        throw new Error("This campaign is not open for booking yet.");
-      }
-      if (taken >= maxSlots) {
-        throw new Error("All spots for this flash deal are filled.");
-      }
+    if (maxSlots < 1) {
+      throw new Error("This campaign is not open for booking yet.");
+    }
+    if (taken >= maxSlots) {
+      throw new Error("All spots for this flash deal are filled.");
     }
 
-    transaction.set(travellerRef, travellerPayload, { merge: true });
+    const segmentKey = buildFlashTripSegment(
+      payload.packageTitle.trim(),
+    ).toUpperCase();
+    assertValidTripSegmentKey(segmentKey);
+    const counterRef = doc(db, TRIP_REF_COUNTERS_COLLECTION, segmentKey);
+    const ctrSnap = await transaction.get(counterRef);
 
-    if (isNewBooking) {
-      transaction.update(dealRef, { slotsTaken: taken + 1 });
+    let lastAllocated = 0;
+    if (ctrSnap.exists()) {
+      const n = (ctrSnap.data() as { next?: unknown }).next;
+      if (typeof n === "number" && Number.isFinite(n)) {
+        lastAllocated = Math.trunc(n);
+      }
     }
+    const newSeq = lastAllocated + 1;
+    const tripRef = formatTripRefWithSequence(segmentKey, newSeq);
+
+    transaction.set(
+      counterRef,
+      { next: newSeq },
+      { merge: true },
+    );
+
+    transaction.set(travellerRef, travellerPayload);
+
+    transaction.set(userFlashDocRef, {
+      ...travellerPayload,
+      kind: "flash-deal",
+      tripRef,
+      paymentStatus: "pending-payment",
+      tripStatus: "pending-payment",
+      createdAt: serverTimestamp(),
+    });
+
+    transaction.update(dealRef, { slotsTaken: taken + 1 });
   });
-
-  if (shouldAppendLedger) {
-    const dealDateIso = /^\d{4}-\d{2}-\d{2}$/.test(payload.dealDate.trim())
-      ? payload.dealDate.trim()
-      : "";
-    try {
-      await appendUserBooking(uid, {
-        kind: "flash-deal",
-        typeLabel: `Flash deal · ${payload.packageTitle.trim()}`,
-        bookingDate: dealDateIso,
-        packageSlug: payload.packageSlug.trim(),
-        flashDealDocId: campaignId,
-        tripSegmentKey: buildFlashTripSegment(payload.packageTitle.trim()),
-      });
-    } catch {
-      // Booking already persisted under campaign; ledger is best-effort.
-    }
-  }
 }
