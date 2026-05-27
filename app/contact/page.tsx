@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import { cn } from "@/lib/utils";
-
-/** International display; tel: uses E.164 (+94…). */
-const CONTACT_PHONE_DISPLAY = "+9477 505 5370";
-const CONTACT_PHONE_HREF = "tel:+94775055370";
+import {
+  formatConfiguredPhoneDisplay,
+  getConfiguredPhoneTelHref,
+} from "@/utils/whatsapp";
 
 const CONTACT_EMAILS = [
   {
@@ -25,6 +25,9 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
+  const phoneDisplay = formatConfiguredPhoneDisplay();
+  const phoneHref = getConfiguredPhoneTelHref();
+
   return (
     <div className="min-h-screen bg-lagoon/10 px-4 py-12 sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
@@ -60,12 +63,22 @@ export default function ContactPage() {
               Phone
             </h2>
             <p className="mt-4">
-              <a
-                href={CONTACT_PHONE_HREF}
-                className="font-semibold text-lagoon underline-offset-4 transition hover:text-forest hover:underline"
-              >
-                {CONTACT_PHONE_DISPLAY}
-              </a>
+              {phoneDisplay && phoneHref ? (
+                <a
+                  href={phoneHref}
+                  className="font-semibold text-lagoon underline-offset-4 transition hover:text-forest hover:underline"
+                >
+                  {phoneDisplay}
+                </a>
+              ) : (
+                <span className="text-stone-500">
+                  Phone not configured — set{" "}
+                  <code className="rounded bg-stone-100 px-1 text-xs">
+                    NEXT_PUBLIC_WHATSAPP_NUMBER
+                  </code>{" "}
+                  in your environment.
+                </span>
+              )}
             </p>
           </section>
 

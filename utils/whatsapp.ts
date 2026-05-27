@@ -121,6 +121,30 @@ export function getWhatsAppNumber(): string {
   return raw.replace(/\D/g, "");
 }
 
+/**
+ * `tel:` URL for the configured number (`NEXT_PUBLIC_WHATSAPP_NUMBER`), E.164-style.
+ */
+export function getConfiguredPhoneTelHref(): string {
+  const d = getWhatsAppNumber();
+  return d ? `tel:+${d}` : "";
+}
+
+/**
+ * Display line for Contact / UI — Sri Lanka `+94 7X XXX XXXX` when value is 11 digits starting with `94`.
+ * Otherwise `+{digits}` (no extra spaces).
+ */
+export function formatConfiguredPhoneDisplay(): string {
+  const d = getWhatsAppNumber();
+  if (!d) return "";
+
+  if (d.length === 11 && d.startsWith("94")) {
+    const national = d.slice(2);
+    return `+94 ${national.slice(0, 2)} ${national.slice(2, 5)} ${national.slice(5)}`;
+  }
+
+  return `+${d}`;
+}
+
 export function openWhatsAppWithText(text: string): void {
   const num = getWhatsAppNumber();
   if (!num || typeof window === "undefined") return;
