@@ -59,9 +59,9 @@
     text-wrap: balance;
   }
 
-  /** Meridiano home — backpacker float enters from off-screen left, no vertical drop. */
+  /** Meridiano home — dock buttons enter from off-screen left (`both` = hold 0% keyframe during delay). */
   .animate-backpacker-enter-left {
-    animation: backpacker-slide-enter-left 0.72s cubic-bezier(0.25, 0.46, 0.45, 1) forwards;
+    animation: backpacker-slide-enter-left 0.72s cubic-bezier(0.25, 0.46, 0.45, 1) both;
   }
 
   @media (prefers-reduced-motion: reduce) {

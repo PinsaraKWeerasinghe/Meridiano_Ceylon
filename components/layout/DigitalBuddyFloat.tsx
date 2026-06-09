@@ -1,18 +1,56 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** `public/BackPackersImage/...` → `/BackPackersImage/...` */
-export const BACKPACKER_BUTTON_IMAGE =
-  "/BackPackersImage/traveler-backpacker-girl-with-suitcase-running-happily-3d-icon-png-download-14043606.webp";
-
 const HOME_HERO_ID = "home-hero";
 
-/** Entry to Backpacker Support — home hero only; all motion from/on the left; replay enter when hero is visible again. */
+/** Drop-only leads enter/exit; Backpacker follows (ms). */
+const DOCK_STAGGER_MS = 320;
+
+const DOCK_OFFSCREEN =
+  "-translate-x-[calc(100vw+3rem)] opacity-0 pointer-events-none";
+
+/** Matches hero / Build your journey CTA (`bg-gold`, `text-cream`, `hover:bg-[#1d5349]`). */
+const DOCK_LINK_CLASS =
+  "block max-w-[18rem] rounded-none bg-gold px-3 py-2.5 text-center text-xs font-semibold leading-snug text-cream shadow-md transition hover:bg-[#1d5349] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/40";
+
+const DOCK_MOTION_TRANSITION =
+  "motion-reduce:transition-none motion-safe:[transition:transform_0.88s_cubic-bezier(0.4,0,0.2,1),opacity_0.45s_ease_0.32s]";
+
+function dockLeadMotionClass(
+  introActive: boolean,
+  exitActive: boolean,
+  resting: boolean,
+): string {
+  return cn(
+    DOCK_MOTION_TRANSITION,
+    introActive &&
+      "pointer-events-none animate-backpacker-enter-left motion-reduce:animate-none motion-reduce:translate-x-0 motion-reduce:opacity-100",
+    exitActive && DOCK_OFFSCREEN,
+    resting && "translate-x-0 opacity-100",
+  );
+}
+
+function dockFollowMotionClass(
+  introActive: boolean,
+  waitingToEnter: boolean,
+  exitActive: boolean,
+  resting: boolean,
+): string {
+  return cn(
+    DOCK_MOTION_TRANSITION,
+    waitingToEnter && DOCK_OFFSCREEN,
+    introActive &&
+      "pointer-events-none animate-backpacker-enter-left motion-reduce:animate-none motion-reduce:translate-x-0 motion-reduce:opacity-100",
+    exitActive && DOCK_OFFSCREEN,
+    resting && "translate-x-0 opacity-100",
+  );
+}
+
+/** Home hero dock — staggered enter/exit from the left. */
 export function DigitalBuddyFloat() {
   const pathname = usePathname();
   const isHome = pathname === "/";
@@ -20,7 +58,13 @@ export function DigitalBuddyFloat() {
   const [heroInView, setHeroInView] = useState(isHome);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [playIntroAnim, setPlayIntroAnim] = useState(false);
+  const [introDropActive, setIntroDropActive] = useState(false);
+  const [introBackpackerActive, setIntroBackpackerActive] = useState(false);
+  const [exitDropActive, setExitDropActive] = useState(false);
+  const [exitBackpackerActive, setExitBackpackerActive] = useState(false);
   const prevHeroRef = useRef<boolean | null>(null);
+  const introStaggerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exitStaggerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isHome) setHeroInView(true);
@@ -32,6 +76,10 @@ export function DigitalBuddyFloat() {
     setReduceMotion(rm);
     if (!isHome) {
       setPlayIntroAnim(false);
+      setIntroDropActive(false);
+      setIntroBackpackerActive(false);
+      setExitDropActive(false);
+      setExitBackpackerActive(false);
       prevHeroRef.current = null;
       return;
     }
@@ -43,28 +91,17 @@ export function DigitalBuddyFloat() {
     const onPrefChange = () => {
       const rm = mq.matches;
       setReduceMotion(rm);
-      if (rm) setPlayIntroAnim(false);
+      if (rm) {
+        setPlayIntroAnim(false);
+        setIntroDropActive(false);
+        setIntroBackpackerActive(false);
+        setExitDropActive(false);
+        setExitBackpackerActive(false);
+      }
     };
     mq.addEventListener("change", onPrefChange);
     return () => mq.removeEventListener("change", onPrefChange);
   }, []);
-
-  /** When hero leaves viewport, clear intro flag after layout so exiting transform can tween (keyframes removed next frame). */
-  useEffect(() => {
-    if (!isHome || heroInView) return;
-    let cancelled = false;
-    let inner = 0;
-    const outer = window.requestAnimationFrame(() => {
-      inner = window.requestAnimationFrame(() => {
-        if (!cancelled) setPlayIntroAnim(false);
-      });
-    });
-    return () => {
-      cancelled = true;
-      window.cancelAnimationFrame(outer);
-      window.cancelAnimationFrame(inner);
-    };
-  }, [isHome, heroInView]);
 
   /** Re-enter hero after scroll-away: replay entrance from the left (unless reduced motion). */
   useEffect(() => {
@@ -76,12 +113,85 @@ export function DigitalBuddyFloat() {
     }
   }, [isHome, heroInView, reduceMotion]);
 
-  /** Failsafe if `animationend` does not fire. */
+  /** Staggered enter: Drop-only first, then Backpacker. */
   useEffect(() => {
-    if (!playIntroAnim || reduceMotion || !heroInView) return;
-    const t = window.setTimeout(() => setPlayIntroAnim(false), 820);
+    if (introStaggerRef.current) {
+      clearTimeout(introStaggerRef.current);
+      introStaggerRef.current = null;
+    }
+
+    const introRunning = playIntroAnim && heroInView;
+    if (!introRunning || reduceMotion) {
+      setIntroDropActive(false);
+      setIntroBackpackerActive(false);
+      return;
+    }
+
+    setExitDropActive(false);
+    setExitBackpackerActive(false);
+    setIntroDropActive(true);
+    setIntroBackpackerActive(false);
+    introStaggerRef.current = setTimeout(() => {
+      setIntroBackpackerActive(true);
+      introStaggerRef.current = null;
+    }, DOCK_STAGGER_MS);
+
+    return () => {
+      if (introStaggerRef.current) {
+        clearTimeout(introStaggerRef.current);
+        introStaggerRef.current = null;
+      }
+    };
+  }, [playIntroAnim, heroInView, reduceMotion]);
+
+  /** Staggered exit: Drop-only first, then Backpacker (mirrors enter). */
+  useEffect(() => {
+    if (exitStaggerRef.current) {
+      clearTimeout(exitStaggerRef.current);
+      exitStaggerRef.current = null;
+    }
+
+    if (!isHome || heroInView) {
+      setExitDropActive(false);
+      setExitBackpackerActive(false);
+      return;
+    }
+
+    setPlayIntroAnim(false);
+    setIntroDropActive(false);
+    setIntroBackpackerActive(false);
+
+    if (reduceMotion) {
+      setExitDropActive(true);
+      setExitBackpackerActive(true);
+      return;
+    }
+
+    setExitDropActive(true);
+    setExitBackpackerActive(false);
+    exitStaggerRef.current = setTimeout(() => {
+      setExitBackpackerActive(true);
+      exitStaggerRef.current = null;
+    }, DOCK_STAGGER_MS);
+
+    return () => {
+      if (exitStaggerRef.current) {
+        clearTimeout(exitStaggerRef.current);
+        exitStaggerRef.current = null;
+      }
+    };
+  }, [isHome, heroInView, reduceMotion]);
+
+  /** Failsafe if Backpacker `animationend` does not fire. */
+  useEffect(() => {
+    if (!introBackpackerActive || reduceMotion || !heroInView) return;
+    const t = window.setTimeout(() => {
+      setPlayIntroAnim(false);
+      setIntroDropActive(false);
+      setIntroBackpackerActive(false);
+    }, 820 + DOCK_STAGGER_MS);
     return () => window.clearTimeout(t);
-  }, [playIntroAnim, reduceMotion, heroInView]);
+  }, [introBackpackerActive, reduceMotion, heroInView]);
 
   useEffect(() => {
     if (!isHome) return;
@@ -94,7 +204,6 @@ export function DigitalBuddyFloat() {
       ([entry]) => {
         setHeroInView(entry.isIntersecting && entry.intersectionRatio > 0);
       },
-      /** Negative bottom margin: treat hero as leaving a bit sooner so slide-out feels continuous, not a hard pop. */
       { threshold: [0, 0.02, 0.06, 0.15], rootMargin: "0px 0px -48px 0px" },
     );
     obs.observe(el);
@@ -103,54 +212,65 @@ export function DigitalBuddyFloat() {
 
   if (!isHome) return null;
 
-  const scrolledAway = !heroInView;
-  const resting = heroInView && !playIntroAnim;
-  /** Keyframe entrance only while hero is visible; exit path uses transitions only so it slides smoothly off the left edge. */
-  const introRunning = Boolean(playIntroAnim && heroInView);
+  const resting =
+    heroInView &&
+    !introDropActive &&
+    !introBackpackerActive &&
+    !exitDropActive &&
+    !exitBackpackerActive;
+  const introSequenceRunning = introDropActive || introBackpackerActive;
+  const backpackerWaiting =
+    introDropActive && !introBackpackerActive && heroInView;
 
-  function handleIntroEnd(ev: React.AnimationEvent<HTMLDivElement>) {
+  function handleBackpackerIntroEnd(ev: React.AnimationEvent<HTMLDivElement>) {
     if (ev.target !== ev.currentTarget) return;
     const name =
       typeof ev.animationName === "string" ? ev.animationName : "";
     if (!name.includes("backpacker-slide-enter-left")) return;
     setPlayIntroAnim(false);
+    setIntroDropActive(false);
+    setIntroBackpackerActive(false);
   }
 
   return (
     <div
-      className={cn(
-        "fixed bottom-6 left-4 z-40 w-max md:z-50 sm:bottom-8 sm:left-6",
-        /** Long transform + staggered fade so sliding toward the left edge feels smooth instead of snapping off. */
-        !introRunning &&
-          "motion-reduce:transition-none motion-safe:[transition:transform_0.88s_cubic-bezier(0.4,0,0.2,1),opacity_0.45s_ease_0.32s]",
-        scrolledAway &&
-          "pointer-events-none -translate-x-[calc(100vw+4rem)] opacity-0 sm:-translate-x-[calc(100vw+5rem)]",
-        introRunning &&
-          "pointer-events-none animate-backpacker-enter-left motion-reduce:animate-none motion-reduce:translate-x-0 motion-reduce:opacity-100",
-        resting && "translate-x-0 opacity-100",
-      )}
-      aria-hidden={!resting}
-      onAnimationEnd={handleIntroEnd}
+      className="fixed bottom-6 left-0 z-40 w-max md:z-50 sm:bottom-8"
+      aria-hidden={!resting && !introSequenceRunning}
     >
-      <Link
-        href="/digital-buddy"
-        aria-label="Meridiano Digital Buddy — backpacker support"
-        className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-gold/20 bg-[#e0ebe7] p-1 shadow-md transition-colors transition-shadow hover:border-gold/30 hover:bg-gold/10 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/40 sm:h-16 sm:w-16 sm:p-1.5"
-      >
-        <Image
-          src={BACKPACKER_BUTTON_IMAGE}
-          alt=""
-          width={64}
-          height={64}
-          className="h-full w-full object-contain object-center"
-          sizes="64px"
-        />
-      </Link>
-      <p
-        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 max-w-[min(18rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-gold/20 bg-[#e0ebe7] px-3 py-2 text-center text-xs font-medium leading-snug text-forest shadow-md"
-      >
-        Backpackers corner..
-      </p>
+      <div className="flex flex-col gap-2">
+        <div
+          className={dockLeadMotionClass(
+            introDropActive,
+            exitDropActive,
+            resting,
+          )}
+        >
+          <Link
+            href="/packages/drop-only-tours"
+            aria-label="Drop only tours"
+            className={DOCK_LINK_CLASS}
+          >
+            Drop only tours
+          </Link>
+        </div>
+        <div
+          className={dockFollowMotionClass(
+            introBackpackerActive,
+            backpackerWaiting,
+            exitBackpackerActive,
+            resting,
+          )}
+          onAnimationEnd={handleBackpackerIntroEnd}
+        >
+          <Link
+            href="/digital-buddy"
+            aria-label="Backpacker corner — Meridiano backpacker support"
+            className={DOCK_LINK_CLASS}
+          >
+            Backpacker corner
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
