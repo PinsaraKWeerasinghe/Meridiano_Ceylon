@@ -217,3 +217,59 @@ export function buildPackageBookingWhatsAppMessage(
 
   return lines.join("\n");
 }
+
+export type FlashDealBookingPayload = {
+  dealTitle: string;
+  /** ISO `YYYY-MM-DD` closing date */
+  dealDate: string;
+  /** ISO `YYYY-MM-DD`, optional fixed tour window */
+  fixedTourStartDate?: string;
+  fixedTourEndDate?: string;
+  perPersonCharge: string;
+  registrationPrice: string;
+  primaryName: string;
+  primaryPassport: string;
+  primaryGender: "male" | "female";
+  phone: string;
+  submitterEmail: string | null;
+};
+
+export function buildFlashDealWhatsAppMessage(
+  data: FlashDealBookingPayload,
+): string {
+  const lines: string[] = [
+    "Meridiano Ceylon — Flash deal booking",
+    "",
+    `Flash deal: ${data.dealTitle}`,
+    `Closing date: ${data.dealDate || "(not set)"}`,
+  ];
+
+  if (data.fixedTourStartDate && data.fixedTourEndDate) {
+    lines.push(`Tour window: ${data.fixedTourStartDate} → ${data.fixedTourEndDate}`);
+  }
+
+  if (data.perPersonCharge.trim()) {
+    lines.push(`Per person charge: ${data.perPersonCharge.trim()}`);
+  }
+  if (data.registrationPrice.trim()) {
+    lines.push(`Registration price: ${data.registrationPrice.trim()}`);
+  }
+
+  lines.push(
+    "",
+    `Phone: ${data.phone}`,
+    "",
+    "Lead traveller:",
+    `• Name: ${data.primaryName}`,
+    `• Passport: ${data.primaryPassport}`,
+    `• Gender: ${data.primaryGender === "male" ? "Male" : "Female"}`,
+  );
+
+  if (data.submitterEmail) {
+    lines.push(`• Email: ${data.submitterEmail}`);
+  }
+
+  lines.push("", "Please confirm my flash-deal spot. Thank you!");
+
+  return lines.join("\n");
+}

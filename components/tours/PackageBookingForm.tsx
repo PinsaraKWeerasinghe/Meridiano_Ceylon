@@ -1,21 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useEffect, useState } from "react";
 import { useAuthUser } from "@/components/auth/useAuthUser";
 import { Card } from "@/components/ui/Card";
 import { addonTours, allTours } from "@/data/tours";
 import {
-  PACKAGE_BOOKING_DRAFT_STORAGE_KEY,
-  type PackageBookingDraftV1,
-} from "@/lib/package-booking-draft";
-import { computeBookingBillBreakdown } from "@/lib/package-booking-bill";
+  computeBookingBillBreakdown,
+  formatBookingBillWhatsAppLines,
+} from "@/lib/package-booking-bill";
 import { appendUserBooking } from "@/lib/user-bookings";
 import { buildTripSegmentForPackageTour } from "@/lib/trip-ref-format";
 import { fetchUserProfile } from "@/lib/user-profile";
 import { cn } from "@/lib/utils";
-import { type PackageBookingPartner } from "@/utils/whatsapp";
+import {
+  buildPackageBookingWhatsAppMessage,
+  getWhatsAppNumber,
+  openWhatsAppWithText,
+  type PackageBookingPartner,
+} from "@/utils/whatsapp";
 
 function slugFromDetailPath(path: string): string {
   return path.replace(/^\/packages\//, "");
@@ -39,7 +43,6 @@ function splitDisplayName(displayName: string | null | undefined): {
 }
 
 export function PackageBookingForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user, ready: authReady } = useAuthUser();
 
@@ -63,6 +66,7 @@ export function PackageBookingForm() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (!authReady || !user?.uid) return;
@@ -183,6 +187,13 @@ export function PackageBookingForm() {
     e.preventDefault();
     setError(null);
 
+    if (!getWhatsAppNumber()) {
+      setError(
+        "WhatsApp number is not configured. Please contact us directly to complete your booking.",
+      );
+      return;
+    }
+
     if (!primaryName.trim()) {
       setError("Please enter the lead traveller’s full name.");
       return;
@@ -234,21 +245,6 @@ export function PackageBookingForm() {
         ? []
         : addonTours.filter((a) => addonIds.has(a.id)).map((a) => a.title);
 
-    const draft: PackageBookingDraftV1 = {
-      v: 1,
-      packageSlug,
-      packageTitle: selectedTitle,
-      primaryName: primaryName.trim(),
-      primaryPassport: primaryPassport.trim(),
-      primaryGender,
-      partners: filledPartners,
-      phone: phone.trim(),
-      addonIds: Array.from(addonIds),
-      addonTitles,
-      notes,
-      billBreakdown: billBreakdown,
-    };
-
     setSubmitting(true);
     try {
       const uid = user?.uid?.trim();
@@ -262,11 +258,26 @@ export function PackageBookingForm() {
           tripSegmentKey: buildTripSegmentForPackageTour(selectedTour),
         });
       }
-      sessionStorage.setItem(
-        PACKAGE_BOOKING_DRAFT_STORAGE_KEY,
-        JSON.stringify(draft),
-      );
-      router.push("/packages/book/checkout");
+
+      const estimatedBillLines =
+        billBreakdown != null
+          ? formatBookingBillWhatsAppLines(billBreakdown)
+          : undefined;
+
+      const text = buildPackageBookingWhatsAppMessage({
+        primaryName: primaryName.trim(),
+        primaryPassport: primaryPassport.trim(),
+        primaryGender,
+        partners: filledPartners,
+        packageTitle: selectedTitle,
+        phone: phone.trim(),
+        selectedAddonTitles: addonTitles,
+        notes,
+        estimatedBillLines,
+      });
+
+      openWhatsAppWithText(text);
+      setSubmitted(true);
     } catch (err) {
       setError(
         err instanceof Error
@@ -547,7 +558,7 @@ export function PackageBookingForm() {
               Package price is per person and scales with travellers (lead plus
               partners with completed details). Add-ons are a flat fee per
               selection for this booking. Meridiano confirms the final amount
-              before payment.
+              before confirming on WhatsApp.
             </p>
             <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm text-stone-800">
               <div className="space-y-3">
@@ -645,6 +656,22 @@ export function PackageBookingForm() {
           </p>
         ) : null}
 
+        {submitted ? (
+          <p
+            className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+            role="status"
+          >
+            Opening WhatsApp with your booking details… If it didn’t open,
+            message us at{" "}
+            <span className="font-semibold">
+              {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER
+                ? `+${getWhatsAppNumber()}`
+                : "our WhatsApp number"}
+            </span>{" "}
+            to confirm.
+          </p>
+        ) : null}
+
         {authReady && !user ? (
           <p className="text-xs text-stone-500">
             <Link
@@ -674,7 +701,7 @@ export function PackageBookingForm() {
             submitting && "opacity-60",
           )}
         >
-          {submitting ? "Saving…" : "Confirm Booking"}
+          {submitting ? "Saving…" : "Send booking on WhatsApp"}
         </button>
         </form>
       )}

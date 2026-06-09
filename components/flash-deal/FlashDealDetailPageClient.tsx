@@ -17,6 +17,11 @@ import { isFirebaseConfigured } from "@/lib/firebase";
 import { packagesGreenCard } from "@/lib/packages-section-theme";
 import { ensureUserTravelerDefaults, fetchUserProfile } from "@/lib/user-profile";
 import { cn } from "@/lib/utils";
+import {
+  buildFlashDealWhatsAppMessage,
+  getWhatsAppNumber,
+  openWhatsAppWithText,
+} from "@/utils/whatsapp";
 
 /** Shared typography for every detail value on this page */
 const detailValueClass =
@@ -165,6 +170,23 @@ export function FlashDealDetailPageClient() {
         dealDate: detail.dealDate,
       });
       setBookingOk(true);
+
+      if (getWhatsAppNumber()) {
+        const text = buildFlashDealWhatsAppMessage({
+          dealTitle: detail.title,
+          dealDate: detail.dealDate,
+          fixedTourStartDate: detail.fixedTourStartDate || undefined,
+          fixedTourEndDate: detail.fixedTourEndDate || undefined,
+          perPersonCharge: detail.perPersonCharge,
+          registrationPrice: detail.registrationPrice,
+          primaryName,
+          primaryPassport: profile.passportId.trim(),
+          primaryGender: profile.gender,
+          phone: profile.phone.trim(),
+          submitterEmail: user.email ?? null,
+        });
+        openWhatsAppWithText(text);
+      }
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Could not complete booking.";
@@ -361,7 +383,7 @@ export function FlashDealDetailPageClient() {
                 </legend>
                 <p className="mt-1 text-xs text-stone-500">
                   Figures below come from this flash-deal campaign. Meridiano
-                  confirms the final amount before payment.
+                  confirms the final amount before confirming on WhatsApp.
                 </p>
                 <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-4 text-sm text-stone-800">
                   <div className="space-y-3">

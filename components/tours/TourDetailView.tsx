@@ -188,7 +188,7 @@ export function TourDetailView({ detail }: { detail: TourDetailContent }) {
               </p>
               <p className="text-stone-700">
                 Flat add-on fee per booking — layered onto any fixed package
-                during checkout. Final amount is confirmed before payment.
+                when you book. Final amount is confirmed on WhatsApp.
               </p>
             </Card>
           </div>

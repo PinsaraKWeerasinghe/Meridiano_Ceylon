@@ -6,7 +6,7 @@ import { PackageBookingForm } from "@/components/tours/PackageBookingForm";
 export const metadata: Metadata = {
   title: "Book a package",
   description:
-    "Confirm traveller and package details, then complete billing and payment.",
+    "Share your traveller and package details, then confirm your booking with us on WhatsApp.",
 };
 
 function BookFormFallback() {
@@ -32,8 +32,8 @@ export default function PackageBookPage() {
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-stone-700">
           Tell us who is travelling, which package you want, and any add-ons.
-          After you confirm, you&apos;ll review billing details and Terms &amp;
-          Conditions before paying securely.
+          When you confirm, we&apos;ll open WhatsApp with your details so our
+          team can finalise availability and pricing with you.
         </p>
 
         <div className="mt-10">
