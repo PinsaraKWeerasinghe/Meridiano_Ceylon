@@ -247,10 +247,10 @@ export function DigitalBuddyFloat() {
         >
           <Link
             href="/packages/drop-only-tours"
-            aria-label="Drop only tours"
+            aria-label="Drops & Pickups"
             className={DOCK_LINK_CLASS}
           >
-            Drop only tours
+            Drops & Pickups
           </Link>
         </div>
         <div

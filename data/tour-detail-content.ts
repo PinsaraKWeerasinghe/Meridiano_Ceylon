@@ -768,7 +768,7 @@ export const tourDetailsBySlug: Record<string, TourDetailContent> = {
   "drop-only-tours": {
     tourId: "spec-drop-only",
     slug: "drop-only-tours",
-    pageTitle: "Drop-Only Tours",
+    pageTitle: "Drops & Pickups",
     metaDescription:
       "One-way and point-to-point transport in Sri Lanka — airports, hotels, and cities with a professional fleet and clear pricing.",
     durationLabel: "Specialty tour",

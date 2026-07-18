@@ -277,7 +277,7 @@ export const specialtyTours: TourItem[] = [
   {
     id: "spec-drop-only",
     kind: "specialty",
-    title: "Drop-Only Tours",
+    title: "Drops & Pickups",
     description:
       "Professional one-way and point-to-point transport — airports, hotels, and cities with a modern fleet and clear, fixed pricing.",
     detailPath: "/packages/drop-only-tours",
