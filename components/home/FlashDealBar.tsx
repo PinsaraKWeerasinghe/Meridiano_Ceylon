@@ -10,6 +10,11 @@ import {
   type FlashDealBarConfig,
 } from "@/lib/flash-deal-settings";
 import { isFirebaseConfigured } from "@/lib/firebase";
+import { readCookieConsentAccepted } from "@/lib/cookie-consent";
+import {
+  readFlashDealDismissed,
+  writeFlashDealDismissed,
+} from "@/lib/flash-deal-dismissal";
 
 function pad2(n: number) {
   return n.toString().padStart(2, "0");
@@ -367,15 +372,35 @@ export function FlashDealBar() {
     return unsub;
   }, []);
 
+  const dealDocId = config?.dealDocId ?? null;
+
+  // Seed dismissal from storage per campaign (only honoured once consent given).
+  useEffect(() => {
+    if (!dealDocId) {
+      setDismissed(false);
+      return;
+    }
+    setDismissed(
+      readCookieConsentAccepted() && readFlashDealDismissed(dealDocId),
+    );
+  }, [dealDocId]);
+
   if (!hydrated || !config) {
     return null;
   }
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    if (readCookieConsentAccepted()) {
+      writeFlashDealDismissed(config.dealDocId);
+    }
+  };
 
   return (
     <FlashDealBarChrome
       config={config}
       dismissed={dismissed}
-      onDismiss={() => setDismissed(true)}
+      onDismiss={handleDismiss}
     />
   );
 }

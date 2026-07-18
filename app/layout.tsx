@@ -9,6 +9,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { DigitalBuddyFloat } from "@/components/layout/DigitalBuddyFloat";
 import { WhatsAppFloat } from "@/components/layout/WhatsAppFloat";
+import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import {
   MaintenanceBanner,
   MaintenanceBannerSpacer,
@@ -80,6 +81,7 @@ export default function RootLayout({
           <Footer />
           <DigitalBuddyFloat />
           <WhatsAppFloat />
+          <CookieConsentBanner />
         </FlowbiteThemeProvider>
       </body>
     </html>
