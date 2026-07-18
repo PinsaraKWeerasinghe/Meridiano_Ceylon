@@ -770,7 +770,7 @@ export const tourDetailsBySlug: Record<string, TourDetailContent> = {
     slug: "drop-only-tours",
     pageTitle: "Drops & Pickups",
     metaDescription:
-      "One-way and point-to-point transport in Sri Lanka — airports, hotels, and cities with a professional fleet and clear pricing.",
+      "Start your Sri Lankan adventure with total peace of mind. We provide reliable, private transfers to any corner of the island with professional drivers.",
     durationLabel: "Specialty tour",
     intro: [
       "Independent itinerary, professional drivers, and door-to-door transfers when you only need reliable transport.",
@@ -778,7 +778,8 @@ export const tourDetailsBySlug: Record<string, TourDetailContent> = {
     specialtyDetail: {
       tagline: "Reliable, Professional, One-Way Transport",
       bodyParagraphs: [
-        "For the independent traveler who has their own itinerary but demands the safety and comfort of a professional service. Whether it is an airport transfer or a journey between cities, we ensure you reach your destination safely and on time.",
+        "Start your Sri Lankan adventure with total peace of mind. We provide reliable, private transfers to any corner of the island.",
+        "Whether you need a pickup from the airport, a ride between hotels, or a long-distance trip to a new city, our professional drivers are ready to assist. We track all flights in real-time for airport arrivals and offer door-to-door service for every journey. Sit back, relax, and enjoy the scenery while we handle the road.",
       ],
       highlightSections: [
         {

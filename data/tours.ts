@@ -279,7 +279,7 @@ export const specialtyTours: TourItem[] = [
     kind: "specialty",
     title: "Drops & Pickups",
     description:
-      "Professional one-way and point-to-point transport — airports, hotels, and cities with a modern fleet and clear, fixed pricing.",
+      "Start your Sri Lankan adventure with total peace of mind. We provide reliable, private transfers to any corner of the island with professional drivers.",
     detailPath: "/packages/drop-only-tours",
   },
   {
